@@ -23,8 +23,10 @@ Author(s): [gao]
   - [5.2 Requesting claims using scope values](#52-requesting-claims-using-scope-values)
 - [6. Authorization](#6-authorization)
   - [6.1. Token request](#61-token-request)
-  - [6.2. Successful token response](#62-successful-token-response)
-  - [6.3. Error response](#63-error-response)
+    - [6.1.1 Token parameters](#611-token-parameters)
+    - [6.1.2 Successful token response](#612-successful-token-response)
+    - [6.1.3. Error response](#613-error-response)
+  - [6.2. Token validation](#62-token-validation)
 - [7. Drawbacks](#7-drawbacks)
 - [8. Rationale and alternatives](#8-rationale-and-alternatives)
 - [9. Future possibilities](#9-future-possibilities)
@@ -97,7 +99,7 @@ Note that organization role is unconsidered in authorization. The actor is only 
 
 ### 4.6. Relationship to existing specs
 
-Sometimes, organization permissions (scopes) may be compared with the `scope` in OpenID Connect and [resource indicators](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request). Since organization is aiming to solve different problems for authentication and authorization, organization scopes and roles have no relationship to these existing specs, other than the sharing names ("scope" and "role"), and should be treated separately.
+Sometimes, organization permissions (scopes) may be compared with the `scope` in OpenID Connect and [Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request). Since organization is aiming to solve different problems for authentication and authorization, organization scopes and roles have no relationship to these existing specs, other than the sharing names ("scope" and "role"), and should be treated separately.
 
 ## 5. Authentication
 
@@ -146,11 +148,17 @@ Based on the existing authentication flow, the OP (OpenID Provider) should be ab
 
 ## 6. Authorization
 
+We leverage the same token endpoint defined in OAuth 2.0 and add a new grant type for requesting JWT access tokens in the context of an organization.
+
+The JWT enforcement can enable the offline authorization for the resource server, which can reduce the network latency and improve the performance.
+
+### 6.1. Token request
+
 OAuth 2.0 defines the [token endpoint](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.2) for requesting access tokens. Although it is doable to add more parameters to the existing grants (e.g. [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request) uses this approach),  it will be more clear to define a new grant type for requesting access tokens for an organization context.
 
 > The biggest challenge of adding more parameters for this spec is that we need to change the inner OP implementation, but since we are creating an extension out of the traditional specs, there's no reason for the upstream to accept our changes. Thus we choose to define a new grant type.
 
-### 6.1. Token request
+#### 6.1.1 Token parameters
 
 To request an access token for an organization context, the client MUST send a request to the token endpoint with the following parameters:
 
@@ -159,7 +167,7 @@ To request an access token for an organization context, the client MUST send a r
 - `organization_id` (REQUIRED): The unique identifier of the organization.
 - `scope` (OPTIONAL): The scopes that the client is requesting. The value MUST be a space-delimited list of strings. If omitted, the authorization server SHOULD issue an access token with the scopes granted by the user.
 
-### 6.2. Successful token response
+#### 6.1.2 Successful token response
 
 If the request is valid and the authorization server successfully issues an access token, the response body requirements are the same as [Section 12.2](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokenResponse) in OpenID Connect.
 
@@ -187,11 +195,23 @@ A non-normative example of the access token:
 }
 ```
 
-### 6.3. Error response
+#### 6.1.3. Error response
 
 If the request is invalid, the authorization server SHOULD return an error response with the same format as defined in [Section 5.2](https://www.rfc-editor.org/rfc/rfc6749.html#section-5.2) in OAuth 2.0.
 
 Note that the authorization server SHOULD return the same error response (`invalid_request`) for both invalid organization ID and other issues, such as the user is not a member of the organization, to prevent the client from guessing the organization information.
+
+### 6.2. Token validation
+
+The resource server MUST validate the access token in the following manner before granting access to the specific organization:
+
+1. The access token MUST be a JWT token.
+2. The access token MUST have a valid signature according to the algorithm defined in the `alg` header parameter and the JWKS (JSON Web Key Set) of the OP (OpenID Provider).
+3. The `iss` claim MUST exactly match the issuer identifier of the OP.
+4. The `organization_id` claim MUST exactly match one of the valid organization identifiers in the resource server.
+5. The `exp` claim MUST be greater than or equal to the current Unix time. The resource server MAY add a reasonable leeway to this time.
+6. The `iat` claim MUST be less than or equal to the current Unix time.
+7. The `scope` claim MUST be a subset of the permissions in the organization template.
 
 ## 7. Drawbacks
 
