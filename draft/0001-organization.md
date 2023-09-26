@@ -6,18 +6,19 @@ Author(s): [gao]
 # Organization
 
 **Table of contents**
-- [1. Summary](#1-summary)
+- [1. Overview](#1-overview)
 - [2. Motivation](#2-motivation)
 - [3. Introduction](#3-introduction)
   - [3.1 Terminology](#31-terminology)
   - [3.2 Limitations](#32-limitations)
-- [4. Organization template](#4-organization-template)
+- [4. Organization](#4-organization)
   - [4.1. Definition](#41-definition)
-  - [4.2. Organization permission](#42-organization-permission)
-  - [4.3. Organization role](#43-organization-role)
-  - [4.4. Assign roles to organization members](#44-assign-roles-to-organization-members)
-  - [4.5. Role-based access control](#45-role-based-access-control)
-  - [4.6. Relationship to existing specs](#46-relationship-to-existing-specs)
+  - [4.2. Organization template](#42-organization-template)
+  - [4.3. Organization permission](#43-organization-permission)
+  - [4.4. Organization role](#44-organization-role)
+  - [4.5. Assign roles to organization members](#45-assign-roles-to-organization-members)
+  - [4.6. Role-based access control](#46-role-based-access-control)
+  - [4.7. Relationship to existing specifications](#47-relationship-to-existing-specifications)
 - [5. Authentication](#5-authentication)
   - [5.1 Organization claims](#51-organization-claims)
   - [5.2 Requesting claims using scope values](#52-requesting-claims-using-scope-values)
@@ -34,94 +35,92 @@ Author(s): [gao]
 - [8. Rationale and alternatives](#8-rationale-and-alternatives)
 - [9. Future possibilities](#9-future-possibilities)
 
-## 1. Summary
+## 1. Overview
 
-Organization is a new concept that gathers multiple identities together (mostly users). While Logto leverages [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) for authentication, it doesn't define the concept of organization. This spec proposes a foundation for organization support built on top of OpenID Connect.
+Organization is a concept that brings together multiple identities (mostly users). While Logto leverages [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) for authentication, it lacks a formal framework for handling organizations. This specification aims to establish a foundation for organization support built on the OpenID Connect framework.
 
 ## 2. Motivation
 
-The product design of organization is locked down, but the current implementation and framework have no definition or support for it. This spec aims to define the basic concepts and requirements for organization from the engineering perspective, which will be used as the foundation for the implementation.
+The current Logto implementation lacks a clear definition and framework for supporting organizations. This specification seeks to define the fundamental concepts and requirements for organizations from an engineering perspective, providing the groundwork for its implementation.
 
 ## 3. Introduction
 
-> Before we start, it's worth noting that "organization" is different from "group". Group is usually used to group multiple identities together for batch operations, while organization also has its own roles and permissions (scopes) as defined in [Section 4](#4-organization-template).
+> Before we start, it's essential to distinguish between "organization" and "group". A group typically serves to group multiple identities for batch operations, while an organization has its own roles and permissions (scopes), as detailed in [Section 4](#4-organization-template).
 
 ### 3.1 Terminology
 
-- **Organization**: An entity that may hold multiple permissions and resources, and link to multiple identities.
-- **Membership**: A link between an identity and an organization.
-- **Organization member**: An identity that has a membership with the organization.
-- **Organization permission**: An action that can be granted or performed within the context of an organization.
-  - In the following sections, we may use the term "scope" to compromise with the OpenID Connect terminology. The word "scope" and "permission" are interchangeable in this spec.
-- **Organization role**: A set of permissions that can be granted to an organization member.
-- **Organization template**: A set of organization permissions and roles that applies to every organization.
+- **Organization**: An entity that can have multiple permissions and resources and is connected to multiple identities.
+- **Membership**: A connection between an identity and an organization.
+- **Organization member**: An identity with a membership in the organization.
+- **Organization permission**: An action that can be granted or executed within the context of an organization.
+  - Throughout this specification, the terms "scope" and "permission" are used interchangeably.
+- **Organization role**: A set of permissions that can be assigned to an organization member.
+- **Organization template**: A collection of organization permissions and roles that applies to every organization.
 
 ### 3.2 Limitations
 
-In this spec, we only consider users as the identity type for simplicity. The support for other identity types (e.g. service accounts) can be discussed in the future.
+For simplicity, this specification focuses on users as the identity type. Support for other identity types, such as service accounts, can be explored in the future.
 
-## 4. Organization template
-
-For modern SaaS applications, it's common to create multiple organizations with the same set of permissions and roles (the template). For example, a user may have the access to multiple workspaces in Slack, and the access to each workspace can vary. In this case, roles and permissions need to be specified in the context of an organization.
-
-Although, duplicating the template for each organization would be doable for this use case, it will take notable effort for updating the template. Consider adding a new role named "collaborator", we need to perform the same interaction on every organization. The consistency across all organizations is required.
+## 4. Organization
 
 ### 4.1. Definition
 
-An organization template doesn't not belong to any organization. It is a tenant-level resource that consists of organization permissions and roles.
+An organization is an entity that can connect multiple identities. Each connection is called a membership, and the identity is called an organization member.
 
-Each organization role in the template SHOULD only be granted with organization permissions in the same template. An organization role MAY have no permission granted.
+### 4.2. Organization template
 
-> In this spec, we only discuss the sole organization template situation. A tenant that holds multiple organization templates is out-of-scope.
+In modern SaaS applications, it's common to create multiple organizations with the same set of permissions and roles (the template). For instance, a user may have access to multiple workspaces in Slack, each with varying levels of access. In such cases, roles and permissions must be defined within the context of an organization.
 
-### 4.2. Organization permission
+While duplicating the template for each organization is feasible, it can become challenging to update the template consistently. For example, adding a new role called "collaborator" would require repeating the same action for every organization. Maintaining consistency across all organizations is crucial.
 
-An organization permission should be a string with a meaningful value, and it also represents the name and unique identifier in the organization template. Permission names should be close to human-readable. For instance, `read:books` indicates the action to read or fetch books in the system, and `update:books` indicates the action to update book information.
+An organization template is not associated with any specific organization; it is a resource at the tenant level that comprises organization permissions and roles.
 
-It is RECOMMENDED to only use lowercase letters with certain symbols (`:_`) for permissions.
+> This specification focuses on a single organization template scenario. Multiple organization templates within a tenant are beyond the scope of this discussion.
 
-### 4.3. Organization role
+### 4.3. Organization permission
 
-An organization role has an unique identifier and holds a set of organization permissions. Each permission the role holds MUST be a predefined permission in the organization template.
+An organization permission SHOULD be represented as a meaningful string, also serving as the name and unique identifier within the organization template. Permission names should be easily understandable. For example, `read:books` indicates the action to read or retrieve books in the system, while `update:books` signifies updating book information.
 
-### 4.4. Assign roles to organization members
+It is RECOMMENDED to only use lowercase letters with specific symbols (`:_`) for permissions.
 
-Before assigning roles to an identity, the identity MUST have a membership with the organization, i.e. the identity is an organization member.
+### 4.4. Organization role
 
-An organization member can be assigned with multiple roles in the organization. Each role the member holds MUST be a predefined role in the organization template.
+An organization role has a unique identifier and contains a set of organization permissions. Each organization role in the template SHOULD only be granted with predefined permissions in the same template. An organization role MAY have no permission granted.
 
-The full set of permissions that an organization member can be granted is the union of all permissions that the member's roles have been granted.
+### 4.5. Assign roles to organization members
 
-### 4.5. Role-based access control
+Before assigning roles to an identity, the identity MUST have a membership with the organization, making them an organization member. An organization member can be assigned multiple roles within the organization, and each role held by the member must be predefined in the organization template. The complete set of permissions granted to an organization member is the union of all permissions granted by their roles.
 
-To authorize an actor (identity) to perform a certain action in an organization context, the actor MUST be assigned with at least one role that holds the desired permission (scope).
+### 4.6. Role-based access control
+
+To authorize an actor (identity) to perform a specific action within an organization context, the actor MUST be assigned at least one role that contains the desired permission (scope).
 
 If the actor does not specify the organization context, the authorization MUST fail.
 
-Note that organization role is unconsidered in authorization. The actor is only authorized to perform the action based on the organization permission, regardless of the organization role.
+It's important to note that organization roles are not considered in authorization. The actor is authorized to perform the action based solely on the organization permission, regardless of their organization role.
 
-### 4.6. Relationship to existing specs
+### 4.7. Relationship to existing specifications
 
-Sometimes, organization permissions (scopes) may be compared with the `scope` in OpenID Connect and [Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request). Since organization is aiming to solve different problems for authentication and authorization, organization scopes and roles have no relationship to these existing specs, other than the sharing names ("scope" and "role"), and should be treated separately.
+Organization permissions (scopes) are distinct from the `scope` in OpenID Connect and [Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request). While these existing specifications share terminology like "scope" and "role" with organization, they are designed to address different authentication and authorization challenges. Organization scopes and roles should be treated separately.
 
 ## 5. Authentication
 
-In OpenID Connect, [ID Token](https://openid.net/specs/openid-connect-core-1_0.html#IDToken) is a JWT token that contains the identity information of the user. In addition to the [Standard Claims](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims), we add a few new claims to the ID token to support organization.
+In OpenID Connect, the [ID Token](https://openid.net/specs/openid-connect-core-1_0.html#IDToken) is a JWT token containing user identity information. In addition to the [Standard Claims](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims), we introduce new claims to the ID token to support organization.
 
 ### 5.1 Organization claims
 
 | Name               | Type                  | Description                                                                                                                                                                                          |
 | ------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | organization_ids   | array of strings      | The unique organization identifiers that the user has a membership with.                                                                                                                             |
-| organization_roles | array of JSON objects | An array of organization roles that the user has. Each object contains the following fields: <ul><li>`organization_id`: The unique organization identifier in string.</li><li>`roles`: The role names that the user has been granted in the organization.</li></ul> |
+| organization_roles | array of JSON objects | An array of organization roles that the user has. Each object contains the following fields: <ul><li>`organization_id`: The unique organization identifier as a string.</li><li>`roles`: The role names granted to the user within the organization.</li></ul> |
 
-The objects of `organization_roles` array should follow the following rules:
+The objects in the `organization_roles` array must adhere to these rules:
 
-- The `organization_id` field should be unique in the array.
-- The `roles` field should be an array of strings, and each string should be unique in the array.
-- The `roles` field should not be empty.
+- The `organization_id` field must be unique within the array.
+- The `roles` field must be an array of strings, with each string being unique within the array.
+- The `roles` field must not be empty.
 
-These rules can save the space of the ID token and be enforced by the OP (OpenID Provider) when issuing the ID token.
+These rules help minimize the size of the ID token and can be enforced by the OpenID Provider (OP) when issuing the ID token.
 
 An example of the ID token with organization claims:
 
@@ -145,37 +144,40 @@ An example of the ID token with organization claims:
 
 ### 5.2 Requesting claims using scope values
 
-Based on the existing authentication flow, the OP (OpenID Provider) should be able to accept the following additional `scope` value in the authentication request, and provide the corresponding claim in the ID token:
+As per the existing authentication flow, the OpenID Provider (OP) SHOULD accept an additional `scope` value in the authentication request and provide the corresponding claim in the ID token:
 
-- `organization`: The organization membership information of the user. This scope value requests access to the `organization_ids` and `organization_roles` claims.
+- `organization`: This scope value requests access to the `organization_ids` and `organization_roles` claims.
 
 ## 6. Authorization
 
-We leverage the same token endpoint defined in OAuth 2.0 and add a new grant type for requesting JWT access tokens in the context of an organization.
+We utilize the same Token Endpoint defined in OAuth 2.0 and introduce a new grant type for requesting JWT access tokens in the context of an organization.
 
-The JWT enforcement can enable the offline authorization for the resource server, which can reduce the network latency and improve the performance.
+Implementing JWT enforcement can enable offline authorization for the resource server, reducing network latency and improving performance.
 
 ### 6.1. Token request
 
-OAuth 2.0 defines the [Token Endpoint](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.2) for requesting access tokens. Although it is doable to add more parameters to the existing grants (e.g. [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request) uses this approach),  it will be more clear to define a new grant type for requesting access tokens for an organization context.
+OAuth 2.0 defines the [Token Endpoint](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.2) for requesting access tokens. Although it's possible to add more parameters to the existing grants (as [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request) does), it's clearer to define a new grant type specifically for requesting access tokens within an organization context.
 
-> The biggest challenge of adding more parameters for this spec is that we need to change the inner OP implementation, but since we are creating an extension out of the traditional specs, there's no reason for the upstream to accept our changes. Thus we choose to define a new grant type.
+> The primary challenge of adding more parameters for this specification is the need to alter the inner OP implementation. Since we are creating an extension based on traditional specifications, there's no guarantee that upstream will accept our changes. Therefore, we opt to define a new grant type.
 
 #### 6.1.1 Token parameters
 
-To request an access token for an organization context, the client MUST send a request to the token endpoint with the following parameters:
+To request an access token within an organization context, the client MUST send a request to the Token Endpoint with the following parameters:
 
 - `grant_type` (REQUIRED): The grant type. The value MUST be `urn:logto:grant-type:organization_token`.
-- `refresh_token` (REQUIRED): The refresh token issued to the client. The refresh token is the same as defined in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) and [RFC OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749.html#section-1.5), and it MUST have the `organization` scope.
+- `refresh_token` (REQUIRED): The refresh token issued to the client. This refresh token follows the same definition as in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) and [RFC OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749.html#section-1.5), and it must have the `organization` scope.
 - `organization_id` (REQUIRED): The unique identifier of the organization.
-- `scope` (REQUIRED): The scopes that the client is requesting. The value MUST be a space-delimited list of strings. If a scope has not been granted to the user, or it is not a valid scope in the organization template, the authorization server SHOULD ignore it.
+- `scope` (REQUIRED): The scopes that the client is requesting. The value MUST be a space-delimited list of strings. If a scope has not been granted to the user or it is not a valid scope in the organization template, the authorization server SHOULD ignore it.
   - If the `scope` parameter is not provided, the authorization server MUST return an error response with the `invalid_request` error code.
+
+> **Note**
+> The scope values in the token request MAY not presented in the authorization request. Refer to [Section 7.2](#72-allowed-dynamic-scopes) for more details.
 
 #### 6.1.2 Successful token response
 
-If the request is valid and the authorization server successfully issues an access token, the response body requirements are the same as [Section 12.2](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokenResponse) in OpenID Connect.
+If the request is valid, and the authorization server successfully issues an access token, the response body SHOULD meet the requirements outlined in [Section 12.2](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokenResponse) of OpenID Connect.
 
-Additionally, the access token MUST be a JWT token that contains the following claims:
+In addition, the access token MUST be a JWT token containing the following claims:
 
 - `jti`: The unique identifier of the access token.
 - `iss`: The issuer identifier of the authorization server.
@@ -183,7 +185,7 @@ Additionally, the access token MUST be a JWT token that contains the following c
 - `org`: The unique identifier of the organization.
 - `exp`: The expiration time of the access token.
 - `iat`: The time when the access token was issued.
-- `scope`: The scopes in a whitespace-delimited string, which MUST be a subset of the scopes granted by the user.
+- `scope`: The scopes, represented as a whitespace-delimited string, MUST be a subset of the scopes granted to the user.
 
 A non-normative example of the access token:
 
@@ -201,16 +203,16 @@ A non-normative example of the access token:
 
 #### 6.1.3. Error response
 
-If the request is invalid, the authorization server SHOULD return an error response with the same format as defined in [Section 5.2](https://www.rfc-editor.org/rfc/rfc6749.html#section-5.2) in OAuth 2.0.
+If the request is invalid, the authorization server SHOULD return an error response in the same format as defined in [Section 5.2](https://www.rfc-editor.org/rfc/rfc6749.html#section-5.2) of OAuth 2.0.
 
-Note that the authorization server SHOULD return the same error response (`invalid_request`) for both invalid organization ID and other issues, such as the user is not a member of the organization, to prevent the client from guessing the organization information.
+Note that the authorization server SHOULD return the same error response (error code `invalid_request`) for both invalid organization ID and other issues, such as the user not being a member of the organization, to prevent the client from guessing organization information.
 
 ### 6.2. Token validation
 
-The resource server MUST validate the access token in the following manner before granting access to the specific organization:
+Before granting access to the specific organization, the resource server MUST validate the access token as follows:
 
 1. The access token MUST be a JWT token.
-2. The access token MUST have a valid signature according to the algorithm defined in the `alg` header parameter and the JWKS (JSON Web Key Set) of the OP (OpenID Provider).
+2. The access token MUST have a valid signature according to the algorithm defined in the `alg` header parameter and the JSON Web Key Set (JWKS) of the OpenID Provider (OP).
 3. The `iss` claim MUST exactly match the issuer identifier of the OP.
 4. The `org` claim MUST exactly match one of the valid organization identifiers in the resource server.
 5. The `exp` claim MUST be greater than or equal to the current Unix time. The resource server MAY add a reasonable leeway to this time.
@@ -221,52 +223,50 @@ The resource server MUST validate the access token in the following manner befor
 
 ### 7.1. ID token size
 
-The ID token size may be increased due to the new claims. In a multi-tenant environment, the ID token size may be increased significantly if the user has a large number of memberships and roles.
+The introduction of new claims may increase the size of the ID token. In a multi-tenant environment, the ID token size may significantly increase if the user has numerous memberships and roles.
 
-To mitigate this issue, the OP MAY only return the organization claims when the client requests the [Userinfo Endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo) with the `organization` scope.
+To mitigate this issue, the OP MAY choose to include organization claims in the ID token only when the client requests the [Userinfo Endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo) with the `organization` scope.
 
 ### 7.2. Allowed dynamic scopes
 
-Although the permissions are predefined in the organization template, it is also required for OAuth 2.0 to specify all the scopes to request in the beginning of the authorization flow. However, the client may not know the exact scopes that the user needs to perform the action in the organization context.
+Although permissions are predefined in the organization template, OAuth 2.0 requires specifying all scopes at the beginning of the authorization flow. However, clients may not know the exact scopes needed to perform actions within an organization context.
 
-So in the new grant type, it is not required to specify the exact scopes that specified in the authorization request, but it is required to specify the scopes for the token request.
+Therefore, in the new grant type, specifying the exact scopes from the authorization request is not mandatory, but specifying the scopes for the token request is required.
 
-We treat it as a balance between the security and usability. It not only allows the client to request the scopes based on the latest information, without the need to request the authorization again (often lead to a bad experience), but also enables the possibility to extend the user's permissions on the fly.
+This approach strikes a balance between security and usability. It allows clients to request scopes based on the latest information without the need for additional authorization requests (which often leads to a poor user experience) and enables the extension of user permissions on-the-fly.
 
-It's worth noting that the authorization server will always down-scope the request based on the user's permissions, and the access token can have a short lifetime to mitigate the risk of the dynamic scopes.
+It's important to note that the authorization server will always limit the requested scopes based on the user's permissions, and access tokens may have a short lifespan to mitigate the risk associated with dynamic scopes.
 
 ### 7.3. The absence of resource indicators
 
-[Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html) defines a standard way to request access tokens for a specific resource, and it is very useful for multiple API endpoints that have different permissions. However, how to apply this concept to organization is still unclear and needs further discussion.
+[Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html) define a standardized way to request access tokens for specific resources, which is particularly useful for multiple API endpoints with varying permissions. However, applying this concept to organizations remains unclear and requires further discussion.
 
 ## 8. Rationale and alternatives
 
-The concept of organization has been widely used in modern SaaS applications (names may vary, such as workspace, project, etc.), such as Slack, GitHub, and Google Workspace. There are also a lot of our users requesting this feature.
+The concept of organizations is prevalent in modern SaaS applications, known by various names like workspaces, projects, and more, as seen in Slack, GitHub, and Google Workspace. Many of our users have expressed the need for this feature, making it a crucial addition to Logto.
 
-After researching, we found organization is a must-have feature for Logto, and with its support, numerous businesses and companies can get ready for multi-tenancy with minimal effort.
-
-During the discussion, there were two aspects that we found alternatives:
+During discussions, two key aspects emerged:
 
 **Implementation**
 
-The identity model of Logto Cloud is already a typical multi-tenant model, and we leveraged Resource Indicators to support it. However, we met two issues:
+Logto Cloud already follows a typical multi-tenant model for identity, and we initially used Resource Indicators to support it. However, we encountered two challenges:
 
-- We need to duplicate the same set of permissions and roles for each tenant (organization), which is not scalable and maintainable.
-- There's no link between the identity and the resource, which requires the user to perform at least two authentication requests to get the access token for a specific tenant.
+- Duplicating permissions and roles for each tenant (organization) proved to be unscalable and difficult to maintain.
+- There was no direct connection between an identity and the resources the identity has access to, requiring users to perform at least two authentication requests to obtain an access token for a specific tenant.
 
 **Role-based access control**
 
-Some solution directly use the tenant-level roles and permissions definition for organizations, which means a permission belongs to a specific resource, and the "organization template" also includes the resource information.
+Some solutions directly use tenant roles and permissions for organizations, implying that permissions are tied to specific resources.
 
-This approach may be easier to implement, but it can confuse the users and developers due to the ambiguity of the borders between the organization and the resource.
+While this approach may be simpler to implement, it can confuse users and developers due to the blurred boundaries between organizations and resources.
 
-In this spec, we define the organization template as a tenant-level resource, and the organization permissions and roles are only defined in the organization template. This approach can make the organization concept more clear, decoupled, and easy to understand. The organization feature can be completely independent and unplugged without affecting the existing resources.
+In this specification, we introduce the organization template as a tenant-level resource, with organization permissions and roles exclusively defined within it. This approach clarifies the organization concept, decouples it from resources, and ensures that the organization feature can function independently without affecting existing resources.
 
 ## 9. Future possibilities
 
-There are still a lot of possibilities for organization, and we can discuss them in the future:
+There are numerous possibilities for expanding the concept of organizations in the future, including:
 
-- Support other identity types (e.g. service accounts).
-- Support multiple organization templates in a tenant.
-- Support organization-level roles and permissions.
-- Support resource indicators for organization.
+- Support for other identity types, such as service accounts.
+- Support for multiple organization templates within a tenant.
+- Implementation of organization-level roles and permissions.
+- Exploring resource indicators for organizations.
