@@ -28,6 +28,9 @@ Author(s): [gao]
     - [6.1.3. Error response](#613-error-response)
   - [6.2. Token validation](#62-token-validation)
 - [7. Drawbacks](#7-drawbacks)
+  - [7.1. ID token size](#71-id-token-size)
+  - [7.2. Allowed dynamic scopes](#72-allowed-dynamic-scopes)
+  - [7.3. The absence of resource indicators](#73-the-absence-of-resource-indicators)
 - [8. Rationale and alternatives](#8-rationale-and-alternatives)
 - [9. Future possibilities](#9-future-possibilities)
 
@@ -103,7 +106,7 @@ Sometimes, organization permissions (scopes) may be compared with the `scope` in
 
 ## 5. Authentication
 
-In OpenID Connect, [ID token](https://openid.net/specs/openid-connect-core-1_0.html#IDToken) is a JWT token that contains the identity information of the user. In addition to the [standard claims](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims), we add a few new claims to the ID token to support organization.
+In OpenID Connect, [ID Token](https://openid.net/specs/openid-connect-core-1_0.html#IDToken) is a JWT token that contains the identity information of the user. In addition to the [Standard Claims](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims), we add a few new claims to the ID token to support organization.
 
 ### 5.1 Organization claims
 
@@ -154,7 +157,7 @@ The JWT enforcement can enable the offline authorization for the resource server
 
 ### 6.1. Token request
 
-OAuth 2.0 defines the [token endpoint](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.2) for requesting access tokens. Although it is doable to add more parameters to the existing grants (e.g. [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request) uses this approach),  it will be more clear to define a new grant type for requesting access tokens for an organization context.
+OAuth 2.0 defines the [Token Endpoint](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.2) for requesting access tokens. Although it is doable to add more parameters to the existing grants (e.g. [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request) uses this approach),  it will be more clear to define a new grant type for requesting access tokens for an organization context.
 
 > The biggest challenge of adding more parameters for this spec is that we need to change the inner OP implementation, but since we are creating an extension out of the traditional specs, there's no reason for the upstream to accept our changes. Thus we choose to define a new grant type.
 
@@ -165,7 +168,8 @@ To request an access token for an organization context, the client MUST send a r
 - `grant_type` (REQUIRED): The grant type. The value MUST be `urn:logto:grant-type:organization_token`.
 - `refresh_token` (REQUIRED): The refresh token issued to the client. The refresh token is the same as defined in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) and [RFC OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749.html#section-1.5), and it MUST have the `organization` scope.
 - `organization_id` (REQUIRED): The unique identifier of the organization.
-- `scope` (OPTIONAL): The scopes that the client is requesting. The value MUST be a space-delimited list of strings. If omitted, the authorization server SHOULD issue an access token with the scopes granted by the user.
+- `scope` (REQUIRED): The scopes that the client is requesting. The value MUST be a space-delimited list of strings. If a scope has not been granted to the user, or it is not a valid scope in the organization template, the authorization server SHOULD ignore it.
+  - If the `scope` parameter is not provided, the authorization server MUST return an error response with the `invalid_request` error code.
 
 #### 6.1.2 Successful token response
 
@@ -176,7 +180,7 @@ Additionally, the access token MUST be a JWT token that contains the following c
 - `jti`: The unique identifier of the access token.
 - `iss`: The issuer identifier of the authorization server.
 - `sub`: The user identifier.
-- `organization_id`: The unique identifier of the organization.
+- `org`: The unique identifier of the organization.
 - `exp`: The expiration time of the access token.
 - `iat`: The time when the access token was issued.
 - `scope`: The scopes in a whitespace-delimited string, which MUST be a subset of the scopes granted by the user.
@@ -188,7 +192,7 @@ A non-normative example of the access token:
   "jti": "abcde",
   "iss": "https://logto.app",
   "sub": "12345",
-  "organization_id": "12345",
+  "org": "12345",
   "exp": 1632571200,
   "iat": 1632484800,
   "scope": "read:books update:books"
@@ -208,29 +212,61 @@ The resource server MUST validate the access token in the following manner befor
 1. The access token MUST be a JWT token.
 2. The access token MUST have a valid signature according to the algorithm defined in the `alg` header parameter and the JWKS (JSON Web Key Set) of the OP (OpenID Provider).
 3. The `iss` claim MUST exactly match the issuer identifier of the OP.
-4. The `organization_id` claim MUST exactly match one of the valid organization identifiers in the resource server.
+4. The `org` claim MUST exactly match one of the valid organization identifiers in the resource server.
 5. The `exp` claim MUST be greater than or equal to the current Unix time. The resource server MAY add a reasonable leeway to this time.
 6. The `iat` claim MUST be less than or equal to the current Unix time.
 7. The `scope` claim MUST be a subset of the permissions in the organization template.
 
 ## 7. Drawbacks
 
-[To be filled]
+### 7.1. ID token size
 
-Nothing is perfect. What are the downsides of this proposal?
+The ID token size may be increased due to the new claims. In a multi-tenant environment, the ID token size may be increased significantly if the user has a large number of memberships and roles.
+
+To mitigate this issue, the OP MAY only return the organization claims when the client requests the [Userinfo Endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo) with the `organization` scope.
+
+### 7.2. Allowed dynamic scopes
+
+Although the permissions are predefined in the organization template, it is also required for OAuth 2.0 to specify all the scopes to request in the beginning of the authorization flow. However, the client may not know the exact scopes that the user needs to perform the action in the organization context.
+
+So in the new grant type, it is not required to specify the exact scopes that specified in the authorization request, but it is required to specify the scopes for the token request.
+
+We treat it as a balance between the security and usability. It not only allows the client to request the scopes based on the latest information, without the need to request the authorization again (often lead to a bad experience), but also enables the possibility to extend the user's permissions on the fly.
+
+It's worth noting that the authorization server will always down-scope the request based on the user's permissions, and the access token can have a short lifetime to mitigate the risk of the dynamic scopes.
+
+### 7.3. The absence of resource indicators
+
+[Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html) defines a standard way to request access tokens for a specific resource, and it is very useful for multiple API endpoints that have different permissions. However, how to apply this concept to organization is still unclear and needs further discussion.
 
 ## 8. Rationale and alternatives
 
-[To be filled]
+The concept of organization has been widely used in modern SaaS applications (names may vary, such as workspace, project, etc.), such as Slack, GitHub, and Google Workspace. There are also a lot of our users requesting this feature.
 
-Describe at least 2 alternatives to this proposal and answer the following questions:
+After researching, we found organization is a must-have feature for Logto, and with its support, numerous businesses and companies can get ready for multi-tenancy with minimal effort.
 
-- Why this proposal is better than the alternatives?
-- What's the trade-off?
-- What's the impact of not doing this?
+During the discussion, there were two aspects that we found alternatives:
+
+**Implementation**
+
+The identity model of Logto Cloud is already a typical multi-tenant model, and we leveraged Resource Indicators to support it. However, we met two issues:
+
+- We need to duplicate the same set of permissions and roles for each tenant (organization), which is not scalable and maintainable.
+- There's no link between the identity and the resource, which requires the user to perform at least two authentication requests to get the access token for a specific tenant.
+
+**Role-based access control**
+
+Some solution directly use the tenant-level roles and permissions definition for organizations, which means a permission belongs to a specific resource, and the "organization template" also includes the resource information.
+
+This approach may be easier to implement, but it can confuse the users and developers due to the ambiguity of the borders between the organization and the resource.
+
+In this spec, we define the organization template as a tenant-level resource, and the organization permissions and roles are only defined in the organization template. This approach can make the organization concept more clear, decoupled, and easy to understand. The organization feature can be completely independent and unplugged without affecting the existing resources.
 
 ## 9. Future possibilities
 
-[To be filled]
+There are still a lot of possibilities for organization, and we can discuss them in the future:
 
-Is there anything that's out of scope for this proposal but could be done in the future? What are the evolution possibilities of this proposal?
+- Support other identity types (e.g. service accounts).
+- Support multiple organization templates in a tenant.
+- Support organization-level roles and permissions.
+- Support resource indicators for organization.
