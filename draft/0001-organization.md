@@ -1,6 +1,7 @@
 ---
-Start date: '2023-09-25'
-Author(s): [gao]
+Start date: 2023-09-25
+Author(s): gao
+Revision: 1
 ---
 
 # Organization
