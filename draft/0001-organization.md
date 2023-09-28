@@ -31,7 +31,7 @@ Revision: 1
   - [6.2. Token validation](#62-token-validation)
 - [7. Drawbacks](#7-drawbacks)
   - [7.1. ID token size](#71-id-token-size)
-  - [7.2. Allowed dynamic scopes](#72-allowed-dynamic-scopes)
+  - [7.2. Allowed dynamic organizations](#72-allowed-dynamic-organizations)
   - [7.3. The absence of resource indicators](#73-the-absence-of-resource-indicators)
 - [8. Rationale and alternatives](#8-rationale-and-alternatives)
 - [9. Future possibilities](#9-future-possibilities)
@@ -149,11 +149,35 @@ As per the existing authentication flow, the OpenID Provider (OP) SHOULD accept 
 
 - `organization`: This scope value requests access to the `organization_ids` and `organization_roles` claims.
 
+Here's an example of an authentication request with the `organization` scope (values are for demonstration purposes only):
+
+```
+GET /authorize?
+  response_type=code
+  &scope=openid%20profile%20email%20organization
+  &client_id=s6BhdRkqt3
+  &state=af0ifjsldkj
+  &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb HTTP/1.1
+Host: server.example.com
+```
+
 ## 6. Authorization
 
 We utilize the same Token Endpoint defined in OAuth 2.0 and introduce a new grant type for requesting JWT access tokens in the context of an organization.
 
 Implementing JWT enforcement can enable offline authorization for the resource server, reducing network latency and improving performance.
+
+To request scopes in the organization template, the client MUST add the exact scope values to the `scope` parameter in the authentication request. For example, if the organization template has the `read:books` permission, a non-normative authentication request may look like this (values are for demonstration purposes only):
+
+```
+GET /authorize?
+  response_type=code
+  &scope=openid%20profile%20email%20organization%20read:books
+  &client_id=s6BhdRkqt3
+  &state=af0ifjsldkj
+  &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb HTTP/1.1
+Host: server.example.com
+```
 
 ### 6.1. Token request
 
@@ -167,12 +191,10 @@ To request an access token within an organization context, the client MUST send 
 
 - `grant_type` (REQUIRED): The grant type. The value MUST be `urn:logto:grant-type:organization_token`.
 - `refresh_token` (REQUIRED): The refresh token issued to the client. This refresh token follows the same definition as in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) and [RFC OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749.html#section-1.5), and it must have the `organization` scope.
-- `organization_id` (REQUIRED): The unique identifier of the organization.
+- `organization_id` (REQUIRED): The unique identifier of the organization. It MUST be an organization that the user has a membership with.
 - `scope` (REQUIRED): The scopes that the client is requesting. The value MUST be a space-delimited list of strings. If a scope has not been granted to the user or it is not a valid scope in the organization template, the authorization server SHOULD ignore it.
+  - The scope values MUST be a subset of the scopes granted to the user during authentication, and the authorization server MUST NOT grant any additional scopes.
   - If the `scope` parameter is not provided, the authorization server MUST return an error response with the `invalid_request` error code.
-
-> **Note**
-> The scope values in the token request MAY not presented in the authorization request. Refer to [Section 7.2](#72-allowed-dynamic-scopes) for more details.
 
 #### 6.1.2 Successful token response
 
@@ -228,16 +250,13 @@ The introduction of new claims may increase the size of the ID token. In a multi
 
 To mitigate this issue, the OP MAY choose to include organization claims in the ID token only when the client requests the [Userinfo Endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo) with the `organization` scope.
 
-### 7.2. Allowed dynamic scopes
+### 7.2. Allowed dynamic organizations
 
-Although permissions are predefined in the organization template, OAuth 2.0 requires specifying all scopes at the beginning of the authorization flow. However, clients may not know the exact scopes needed to perform actions within an organization context.
+Unlike Resource Indicators, which require the client to specify the resource identifier when making an authentication request, this specification allows the client to request access tokens for any organization the user is a member of. This is because resource servers typically don't interact directly with the user, but organization memberships are directly linked to the user.
 
-Therefore, in the new grant type, specifying the exact scopes from the authorization request is not mandatory, but specifying the scopes for the token request is required.
+In essence, organization memberships function more like an identity attribute. It is acceptable to request access tokens dynamically for any organization the user is a member of.
 
-This approach strikes a balance between security and usability. It allows clients to request scopes based on the latest information without the need for additional authorization requests (which often leads to a poor user experience) and enables the extension of user permissions on-the-fly.
-
-It's important to note that the authorization server will always limit the requested scopes based on the user's permissions, and access tokens may have a short lifespan to mitigate the risk associated with dynamic scopes.
-
+From a security standpoint, we have defined an organization template to restrict the organization scopes that the user can request. We also adhere to the OAuth 2.0 specification to ensure that organization scopes must be declared in the authentication request, and the authorization server must not grant any additional scopes for security reasons.
 ### 7.3. The absence of resource indicators
 
 [Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html) define a standardized way to request access tokens for specific resources, which is particularly useful for multiple API endpoints with varying permissions. However, applying this concept to organizations remains unclear and requires further discussion.
