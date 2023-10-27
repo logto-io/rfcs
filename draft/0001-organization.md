@@ -98,7 +98,7 @@ To authorize an actor (identity) to perform a specific action within an organiza
 
 If the actor does not specify the organization context, the authorization MUST fail.
 
-It's important to note that organization roles are not considered in authorization. The actor is authorized to perform the action based solely on the organization permission, regardless of their organization role.
+It's important to note that organization roles are not considered in authorization. The actor is authorized to perform the action based solely on the organization permission, regardless of their organization roles.
 
 ### 4.7. Relationship to existing specifications
 
@@ -110,16 +110,15 @@ In OpenID Connect, the [ID Token](https://openid.net/specs/openid-connect-core-1
 
 ### 5.1 Organization claims
 
-| Name               | Type                  | Description                                                                                                                                                                                          |
-| ------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| organization_ids   | array of strings      | The unique organization identifiers that the user has a membership with.                                                                                                                             |
-| organization_roles | array of JSON objects | An array of organization roles that the user has. Each object contains the following fields: <ul><li>`organization_id`: The unique organization identifier as a string.</li><li>`roles`: The role names granted to the user within the organization.</li></ul> |
+| Name          | Type                  | Description                                                                                                                                                                                                                                               |
+| ------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| organizations | array of JSON objects | An array of organization ids and roles that the user has. Each object contains the following fields: <ul><li>`id`: The unique organization identifier as a string.</li><li>`roles`: The role names granted to the user within the organization.</li></ul> |
 
-The objects in the `organization_roles` array must adhere to these rules:
+The objects in the `organizations` array must adhere to these rules:
 
-- The `organization_id` field must be unique within the array.
-- The `roles` field must be an array of strings, with each string being unique within the array.
-- The `roles` field must not be empty.
+- The `id` field must be unique within the array.
+- The `roles` field must be an array of strings, with each string being unique within the `roles` array.
+- The `roles` field must be defined. If the user has no roles within the organization, the `roles` field must be an empty array.
 
 These rules help minimize the size of the ID token and can be enforced by the OpenID Provider (OP) when issuing the ID token.
 
@@ -129,15 +128,18 @@ An example of the ID token with organization claims:
 {
   "sub": "12345",
   "name": "John Wick",
-  "organization_ids": ["12345", "67890", "13579"],
-  "organization_roles": [
+  "organizations": [
     {
-      "organization_id": "12345",
+      "id": "12345",
       "roles": ["admin"]
     },
     {
-      "organization_id": "67890",
+      "id": "67890",
       "roles": ["viewer", "editor"]
+    },
+    {
+      "id": "abcde",
+      "roles": []
     }
   ]
 }
@@ -147,14 +149,14 @@ An example of the ID token with organization claims:
 
 As per the existing authentication flow, the OpenID Provider (OP) SHOULD accept an additional `scope` value in the authentication request and provide the corresponding claim in the ID token:
 
-- `organization`: This scope value requests access to the `organization_ids` and `organization_roles` claims.
+- `urn:logto:scope:organization`: This scope value requests access to the `organizations` claim.
 
-Here's an example of an authentication request with the `organization` scope (values are for demonstration purposes only):
+Here's an example of an authentication request with the `urn:logto:scope:organization` scope (values are for demonstration purposes only):
 
 ```
 GET /authorize?
   response_type=code
-  &scope=openid%20profile%20email%20organization
+  &scope=openid%20profile%20email%20urn:logto:scope:organization
   &client_id=s6BhdRkqt3
   &state=af0ifjsldkj
   &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb HTTP/1.1
@@ -172,7 +174,7 @@ To request scopes in the organization template, the client MUST add the exact sc
 ```
 GET /authorize?
   response_type=code
-  &scope=openid%20profile%20email%20organization%20read:books
+  &scope=openid%20profile%20email%20urn:logto:scope:organization%20read:books
   &client_id=s6BhdRkqt3
   &state=af0ifjsldkj
   &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb HTTP/1.1
@@ -190,7 +192,7 @@ OAuth 2.0 defines the [Token Endpoint](https://www.rfc-editor.org/rfc/rfc6749.ht
 To request an access token within an organization context, the client MUST send a request to the Token Endpoint with the following parameters:
 
 - `grant_type` (REQUIRED): The grant type. The value MUST be `urn:logto:grant-type:organization_token`.
-- `refresh_token` (REQUIRED): The refresh token issued to the client. This refresh token follows the same definition as in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) and [RFC OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749.html#section-1.5), and it must have the `organization` scope.
+- `refresh_token` (REQUIRED): The refresh token issued to the client. This refresh token follows the same definition as in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) and [RFC OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749.html#section-1.5), and it must have the `urn:logto:scope:organization` scope.
 - `organization_id` (REQUIRED): The unique identifier of the organization. It MUST be an organization that the user has a membership with.
 - `scope` (REQUIRED): The scopes that the client is requesting. The value MUST be a space-delimited list of strings. If a scope has not been granted to the user or it is not a valid scope in the organization template, the authorization server SHOULD ignore it.
   - The scope values MUST be a subset of the scopes granted to the user during authentication, and the authorization server MUST NOT grant any additional scopes.
@@ -248,7 +250,7 @@ Before granting access to the specific organization, the resource server MUST va
 
 The introduction of new claims may increase the size of the ID token. In a multi-tenant environment, the ID token size may significantly increase if the user has numerous memberships and roles.
 
-To mitigate this issue, the OP MAY choose to include organization claims in the ID token only when the client requests the [Userinfo Endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo) with the `organization` scope.
+To mitigate this issue, the OP MAY choose to include organization claims in the ID token only when the client requests the [Userinfo Endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo) with the `urn:logto:scope:organization` scope.
 
 ### 7.2. Allowed dynamic organizations
 
@@ -272,7 +274,9 @@ During discussions, two key aspects emerged:
 Logto Cloud already follows a typical multi-tenant model for identity, and we initially used Resource Indicators to support it. However, we encountered two challenges:
 
 - Duplicating permissions and roles for each tenant (organization) proved to be unscalable and difficult to maintain.
-- There was no direct connection between an identity and the resources the identity has access to, requiring users to perform at least two authentication requests to obtain an access token for a specific tenant.
+- There was no direct connection between an identity and the resources the identity has access to, requiring users to perform at least two authentication requests to obtain an access token for a specific tenant:
+  1. Perform the an authentication request to fetch an access token for the Logto Cloud API resource.
+  2. Read available tenants for the current user, and perform another authentication request to fetch an access token for the desired tenant.
 
 **Role-based access control**
 
