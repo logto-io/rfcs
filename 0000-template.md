@@ -1,11 +1,13 @@
 ---
 Start date: (today's date, YYYY-MM-DD)
-Author(s): (list of authors)
+# For single author, directly use the name (e.g. `john`), for multiple authors, use a list of names (e.g. `[john, doe]`)
+Author(s): (list of authors) # Use a consistent identifier
+Revision: 1 # Increment this number when you make changes
 ---
 
 # (A human-readable title)
 
-## Summary
+## Overview
 
 Briefly describe the proposal here. What's the problem you're trying to solve? What's the solution you're proposing?
 
