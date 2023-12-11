@@ -1,7 +1,7 @@
 ---
 Start date: 2023-09-25
 Author(s): gao
-Revision: 1
+Revision: 2
 ---
 
 # Organization
@@ -110,17 +110,12 @@ In OpenID Connect, the [ID Token](https://openid.net/specs/openid-connect-core-1
 
 ### 5.1 Organization claims
 
-| Name          | Type                  | Description                                                                                                                                                                                                                                               |
-| ------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| organizations | array of JSON objects | An array of organization ids and roles that the user has. Each object contains the following fields: <ul><li>`id`: The unique organization identifier as a string.</li><li>`roles`: The role names granted to the user within the organization.</li></ul> |
+| Name               | Type             | Description                                                                                                                                                    |
+| ------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| organizations      | array of strings | An array of unique identifiers of the organizations that the user is a member of.                                                                              |
+| organization_roles | array of strings | An array of organization roles that the user has within the organizations. Each item in the array SHOULD follow the format of `{organization_id}:{role_name}`. |
 
-The objects in the `organizations` array must adhere to these rules:
-
-- The `id` field must be unique within the array.
-- The `roles` field must be an array of strings, with each string being unique within the `roles` array.
-- The `roles` field must be defined. If the user has no roles within the organization, the `roles` field must be an empty array.
-
-These rules help minimize the size of the ID token and can be enforced by the OpenID Provider (OP) when issuing the ID token.
+Every item in these claims MUST be unique. The order of the items is not significant.
 
 An example of the ID token with organization claims:
 
@@ -128,20 +123,8 @@ An example of the ID token with organization claims:
 {
   "sub": "12345",
   "name": "John Wick",
-  "organizations": [
-    {
-      "id": "12345",
-      "roles": ["admin"]
-    },
-    {
-      "id": "67890",
-      "roles": ["viewer", "editor"]
-    },
-    {
-      "id": "abcde",
-      "roles": []
-    }
-  ]
+  "organizations": ["12345", "67890", "13579"],
+  "organization_roles": ["12345:admin", "67890:member"]
 }
 ```
 
@@ -149,14 +132,15 @@ An example of the ID token with organization claims:
 
 As per the existing authentication flow, the OpenID Provider (OP) SHOULD accept an additional `scope` value in the authentication request and provide the corresponding claim in the ID token:
 
-- `urn:logto:scope:organization`: This scope value requests access to the `organizations` claim.
+- `urn:logto:scope:organizations`: This scope value requests access to the `organizations` claim.
+- `urn:logto:scope:organization_roles`: This scope value requests access to the `organization_roles` claim.
 
-Here's an example of an authentication request with the `urn:logto:scope:organization` scope (values are for demonstration purposes only):
+Here's an example of an authentication request with the `urn:logto:scope:organizations` scope (values are for demonstration purposes only):
 
 ```
 GET /authorize?
   response_type=code
-  &scope=openid%20profile%20email%20urn:logto:scope:organization
+  &scope=openid%20profile%20email%20urn:logto:scope:organizations
   &client_id=s6BhdRkqt3
   &state=af0ifjsldkj
   &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb HTTP/1.1
@@ -169,12 +153,24 @@ We utilize the same Token Endpoint defined in OAuth 2.0 and introduce a new gran
 
 Implementing JWT enforcement can enable offline authorization for the resource server, reducing network latency and improving performance.
 
-To request scopes in the organization template, the client MUST add the exact scope values to the `scope` parameter in the authentication request. For example, if the organization template has the `read:books` permission, a non-normative authentication request may look like this (values are for demonstration purposes only):
+To request scopes in the context of an organization, the client MUST:
+
+1. Add the exact scope values to the `scope` parameter in the authentication request.
+2. Add the `urn:logto:scope:organizations` scope value to the `scope` parameter in the authentication request.
+3. Add the `urn:logto:resource:organizations` resource indicator to the `resource` parameter in the authentication request.
+
+Here's the rationale for these requirements:
+
+- The `urn:logto:scope:organizations` scope value is required for the token request in [Section 6.1](#61-token-request).
+- The `urn:logto:resource:organizations` resource indicator can help the authorization server to keep track of the organization scopes that the user has requested.
+
+For example, if the organization template has the `read:books` permission, a non-normative authentication request may look like this (values are for demonstration purposes only):
 
 ```
 GET /authorize?
   response_type=code
-  &scope=openid%20profile%20email%20urn:logto:scope:organization%20read:books
+  &scope=openid%20profile%20email%20urn:logto:scope:organizations%20read:books
+  &resource=urn:logto:resource:organizations
   &client_id=s6BhdRkqt3
   &state=af0ifjsldkj
   &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb HTTP/1.1
@@ -183,20 +179,25 @@ Host: server.example.com
 
 ### 6.1. Token request
 
-OAuth 2.0 defines the [Token Endpoint](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.2) for requesting access tokens. Although it's possible to add more parameters to the existing grants (as [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request) does), it's clearer to define a new grant type specifically for requesting access tokens within an organization context.
+OAuth 2.0 defines the [Token Endpoint](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.2) for requesting access tokens. Similar to [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707.html#name-access-token-request), we can add a new parameter to the Token Endpoint to request access tokens in the context of an organization.
 
-> The primary challenge of adding more parameters for this specification is the need to alter the inner OP implementation. Since we are creating an extension based on traditional specifications, there's no guarantee that upstream will accept our changes. Therefore, we opt to define a new grant type.
+In this specification, we extend the `refresh_token` grant type to achieve this goal.
 
 #### 6.1.1 Token parameters
 
 To request an access token within an organization context, the client MUST send a request to the Token Endpoint with the following parameters:
 
-- `grant_type` (REQUIRED): The grant type. The value MUST be `urn:logto:grant-type:organization_token`.
-- `refresh_token` (REQUIRED): The refresh token issued to the client. This refresh token follows the same definition as in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) and [RFC OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749.html#section-1.5), and it must have the `urn:logto:scope:organization` scope.
+- `grant_type` (REQUIRED): The grant type. The value MUST be `refresh_token`.
+- `refresh_token` (REQUIRED): The refresh token issued to the client. This refresh token follows the same definition as in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) and [RFC OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749.html#section-1.5), and it must have the `urn:logto:scope:organizations` scope.
 - `organization_id` (REQUIRED): The unique identifier of the organization. It MUST be an organization that the user has a membership with.
-- `scope` (REQUIRED): The scopes that the client is requesting. The value MUST be a space-delimited list of strings. If a scope has not been granted to the user or it is not a valid scope in the organization template, the authorization server SHOULD ignore it.
-  - The scope values MUST be a subset of the scopes granted to the user during authentication, and the authorization server MUST NOT grant any additional scopes.
-  - If the `scope` parameter is not provided, the authorization server MUST return an error response with the `invalid_request` error code.
+- `scope` (OPTIONAL): The scopes that the client is requesting. The value MUST be a space-delimited list of strings.
+  - If a scope is not a valid scope in the organization template, the authorization server SHOULD ignore it.
+  - If a scope is a valid scope in the organization template, but the user does not have the corresponding permission within the organization, the authorization server SHOULD ignore it.
+  - The scope values MUST be a subset of the scopes granted to the user during authentication, otherwise the authorization server MUST return an error response.
+  - If the `scope` parameter is not provided, the authorization server SHOULD consider it as the equivalent of all the scopes granted to the user during authentication.
+  - The authorization server MUST NOT grant any additional scopes.
+
+The authorization server MUST throw an error if one or more `resource` parameters are provided in the authentication request, as the use of resource indicators is not clear in this context.
 
 #### 6.1.2 Successful token response
 
@@ -207,7 +208,7 @@ In addition, the access token MUST be a JWT token containing the following claim
 - `jti`: The unique identifier of the access token.
 - `iss`: The issuer identifier of the authorization server.
 - `sub`: The user identifier.
-- `org`: The unique identifier of the organization.
+- `aud`: The URN (Uniform Resource Name) of the organization with the format of `urn:logto:organization:{organization_id}`.
 - `exp`: The expiration time of the access token.
 - `iat`: The time when the access token was issued.
 - `scope`: The scopes, represented as a whitespace-delimited string, MUST be a subset of the scopes granted to the user.
@@ -219,7 +220,7 @@ A non-normative example of the access token:
   "jti": "abcde",
   "iss": "https://logto.app",
   "sub": "12345",
-  "org": "12345",
+  "aud": "urn:logto:organization:34567",
   "exp": 1632571200,
   "iat": 1632484800,
   "scope": "read:books update:books"
@@ -230,7 +231,7 @@ A non-normative example of the access token:
 
 If the request is invalid, the authorization server SHOULD return an error response in the same format as defined in [Section 5.2](https://www.rfc-editor.org/rfc/rfc6749.html#section-5.2) of OAuth 2.0.
 
-Note that the authorization server SHOULD return the same error response (error code `invalid_request`) for both invalid organization ID and other issues, such as the user not being a member of the organization, to prevent the client from guessing organization information.
+Note that the authorization server SHOULD return the same error response for both invalid organization ID and other issues, such as the user not being a member of the organization, to prevent the client from guessing organization information.
 
 ### 6.2. Token validation
 
@@ -239,7 +240,7 @@ Before granting access to the specific organization, the resource server MUST va
 1. The access token MUST be a JWT token.
 2. The access token MUST have a valid signature according to the algorithm defined in the `alg` header parameter and the JSON Web Key Set (JWKS) of the OpenID Provider (OP).
 3. The `iss` claim MUST exactly match the issuer identifier of the OP.
-4. The `org` claim MUST exactly match one of the valid organization identifiers in the resource server.
+4. The `aud` claim MUST exactly match the URN of the organization with the format of `urn:logto:organization:{organization_id}`.
 5. The `exp` claim MUST be greater than or equal to the current Unix time. The resource server MAY add a reasonable leeway to this time.
 6. The `iat` claim MUST be less than or equal to the current Unix time.
 7. The `scope` claim MUST be a subset of the permissions in the organization template.
@@ -250,7 +251,7 @@ Before granting access to the specific organization, the resource server MUST va
 
 The introduction of new claims may increase the size of the ID token. In a multi-tenant environment, the ID token size may significantly increase if the user has numerous memberships and roles.
 
-To mitigate this issue, the OP MAY choose to include organization claims in the ID token only when the client requests the [Userinfo Endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo) with the `urn:logto:scope:organization` scope.
+To mitigate this issue, the OP MAY choose to include organization claims in the ID token only when the client requests the [Userinfo Endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo) with the `urn:logto:scope:organizations` or `urn:logto:scope:organization_roles` scope values.
 
 ### 7.2. Allowed dynamic organizations
 
@@ -259,6 +260,7 @@ Unlike Resource Indicators, which require the client to specify the resource ide
 In essence, organization memberships function more like an identity attribute. It is acceptable to request access tokens dynamically for any organization the user is a member of.
 
 From a security standpoint, we have defined an organization template to restrict the organization scopes that the user can request. We also adhere to the OAuth 2.0 specification to ensure that organization scopes must be declared in the authentication request, and the authorization server must not grant any additional scopes for security reasons.
+
 ### 7.3. The absence of resource indicators
 
 [Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html) define a standardized way to request access tokens for specific resources, which is particularly useful for multiple API endpoints with varying permissions. However, applying this concept to organizations remains unclear and requires further discussion.
@@ -292,5 +294,5 @@ There are numerous possibilities for expanding the concept of organizations in t
 
 - Support for other identity types, such as service accounts.
 - Support for multiple organization templates within a tenant.
-- Implementation of organization-level roles and permissions.
+- Implementation of organization-level roles and permissions, which can be different from the organization template.
 - Exploring resource indicators for organizations.
