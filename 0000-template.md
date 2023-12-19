@@ -40,6 +40,10 @@ Describe at least 2 alternatives to this proposal and answer the following quest
 
 Describe the steps and overview of the implementation. If you have any code, pseudo-code, or a proof of concept, please include it here.
 
+## Unresolved questions
+
+Which aspects of the proposal are important but haven't been decided yet, as they go beyond the implementation's scopes?
+
 ## Future possibilities
 
 Is there anything that's out of scope for this proposal but could be done in the future? What are the evolution possibilities of this proposal?
