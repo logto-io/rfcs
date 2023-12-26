@@ -6,36 +6,6 @@ Revision: 2
 
 # Organization
 
-**Table of contents**
-- [1. Overview](#1-overview)
-- [2. Motivation](#2-motivation)
-- [3. Introduction](#3-introduction)
-  - [3.1 Terminology](#31-terminology)
-  - [3.2 Limitations](#32-limitations)
-- [4. Organization](#4-organization)
-  - [4.1. Definition](#41-definition)
-  - [4.2. Organization template](#42-organization-template)
-  - [4.3. Organization permission](#43-organization-permission)
-  - [4.4. Organization role](#44-organization-role)
-  - [4.5. Assign roles to organization members](#45-assign-roles-to-organization-members)
-  - [4.6. Role-based access control](#46-role-based-access-control)
-  - [4.7. Relationship to existing specifications](#47-relationship-to-existing-specifications)
-- [5. Authentication](#5-authentication)
-  - [5.1 Organization claims](#51-organization-claims)
-  - [5.2 Requesting claims using scope values](#52-requesting-claims-using-scope-values)
-- [6. Authorization](#6-authorization)
-  - [6.1. Token request](#61-token-request)
-    - [6.1.1 Token parameters](#611-token-parameters)
-    - [6.1.2 Successful token response](#612-successful-token-response)
-    - [6.1.3. Error response](#613-error-response)
-  - [6.2. Token validation](#62-token-validation)
-- [7. Drawbacks](#7-drawbacks)
-  - [7.1. ID token size](#71-id-token-size)
-  - [7.2. Allowed dynamic organizations](#72-allowed-dynamic-organizations)
-  - [7.3. The absence of resource indicators](#73-the-absence-of-resource-indicators)
-- [8. Rationale and alternatives](#8-rationale-and-alternatives)
-- [9. Future possibilities](#9-future-possibilities)
-
 ## 1. Overview
 
 Organization is a concept that brings together multiple identities (mostly users). While Logto leverages [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) for authentication, it lacks a formal framework for handling organizations. This specification aims to establish a foundation for organization support built on the OpenID Connect framework.
