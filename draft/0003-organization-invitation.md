@@ -47,7 +47,7 @@ The invitation status has a finite number of states, and the state transition di
 stateDiagram-v2
   [*] --> Pending
   Pending --> Accepted: Invitee accepts
-  Pending --> Expired: Time expires
+  Pending --> Expired: Time expires or invitee accepts other invitation
   Pending --> Revoked: Inviter revokes
   Accepted --> [*]
   Expired --> [*]
@@ -86,6 +86,8 @@ If the user is already a member of the organization, the invitation SHOULD NOT b
 #### 3.2.3. Expired
 
 When the time expires, it is not required to physically update the status to `Expired` (for example, update the database); but the response to the query invitation API should be `Expired`. It is RECOMMENDED to update the status in proper cases (for example, query the database).
+
+If the invitee accepts another invitation or has been added to the organization in other ways, the invitation SHOULD be updated to `Expired` if the status is `Pending`.
 
 Once the invitation is expired, the invitation SHOULD NOT be updated to any other status.
 
