@@ -29,7 +29,6 @@ We define an invitation as a data structure that contains the following informat
 - **Created time**: The time when the invitation was created.
 - **Updated time**: The last time the invitation was updated.
 - **Expiration time**: The time when the invitation expires.
-- **Token**: The token used to accept the invitation.
 
 When creating an invitation, the following conditions MUST be met:
 
@@ -59,7 +58,6 @@ stateDiagram-v2
 When the invitation is created, the status SHOULD be `Pending`. Meanwhile:
 
 - The expiration time SHOULD be set to a reasonable time in the future. It is RECOMMENDED to set it to no more than 14 days.
-- The server SHOULD generate a random invitation token.
 - The server SHOULD notify the invitee by the feasible method according to the invitee's email address. For now, we only support email notification.
 - The "Accepted user ID" field SHOULD be set to a null value.
 
@@ -71,7 +69,6 @@ The invitation can be accepted by a Logto user once the following conditions are
 - The user's email address matches the invitee's email address.
 - The user has a normal status (not banned, not deleted, etc.).
 - The user is not a member of the organization.
-- The invitation token is valid.
 - The invitation is not expired or revoked.
 
 When the invitation is accepted:
@@ -99,10 +96,6 @@ The inviter can revoke the invitation at any time when the invitation status is 
 - The "Updated time" field SHOULD be set to the current time.
 
 Once the invitation is revoked, the invitation SHOULD NOT be updated to any other status.
-
-### 3.3. Invitation token
-
-The invitation token is a string that is used to accept the invitation and verify the identity of the invitee. The token should be generated randomly and should be long enough to prevent brute force attacks. It is RECOMMENDED to use a string of 32 characters or more.
 
 ## 4. Drawbacks
 
