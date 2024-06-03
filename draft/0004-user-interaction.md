@@ -117,3 +117,290 @@ To better understand the user interaction flow, we need to understand the lifecy
 | `identified`              | The user has provided a valid identifier and at least one related verification record.         | The user can be identified by the Logto system. The interaction session can access the user's profile and MFA settings for further security checks.       |
 | `verified`                | The user has provide all necessary verification records.                                       | The user is fully verified by the Logto system. The user can proceed to the user profile completion and authentication process based on the SIE settings. |
 | `authenticated`           | The interaction session has been submitted. Authorization granted                              | The user can access the platform resources and services. The interaction session will be terminated once the user logs out or the session expires.        |
+
+## Appendix
+
+### A. Experience APIs
+
+The experience APIs are a set of APIs that allow end-users to interact with the Logto platform to complete the user interaction flow.
+
+#### 1. Interaction events API
+
+```ts
+type Identifier = {
+  type: "username" | "email" | "phone";
+  value: string;
+};
+
+type Verification = {
+  type: "password" | "verification_code";
+  /** Can be omitted if a existing verified verification record exist */
+  value?: string;
+  /** Required if a existing verification record is created for the given identifier */
+  verificationId?: string;
+};
+```
+
+##### Register
+
+`POST /experience/api/register`
+
+The `register` API is used to create a new account in the Logto system. The user must provide at least one `identifier` and a `verification record` to uniquely identify themselves in the Logto system.
+
+Request body:
+
+| Field        | Type         | Description                                  | Required |
+| ------------ | ------------ | -------------------------------------------- | -------- |
+| identifier   | Identifier   | The user's `identifier`.                     | Yes      |
+| verification | Verification | Security data to verify the user's identity. | Yes      |
+
+##### Sign in
+
+`POST /experience/api/sign-in`
+
+The `sign-in` API is used to sign in to an existing account in the Logto system. The user must provide a valid `identifier` and a `verification record` to verify their identity.
+
+Request body:
+
+| Field          | Type         | Description                                        | Required |
+| -------------- | ------------ | -------------------------------------------------- | -------- |
+| identifier     | Identifier   | The user's `identifier`.                           | Yes      |
+| verification   | Verification | Security data to verify the user's identity.       | No       |
+| verificationId | string       | The unique id for a existing `verification record` | No       |
+
+##### Forgot password
+
+`POST /experience/api/forgot-password`
+
+The `forgot-password` API is used to initiate an account recovery process in the Logto system. The user must provide a valid `identifier` to start the account recovery process.
+
+Request body:
+
+| Field        | Type         | Description                                  | Required |
+| ------------ | ------------ | -------------------------------------------- | -------- |
+| identifier   | Identifier   | The user's `identifier`.                     | Yes      |
+| verification | Verification | Security data to verify the user's identity. | Yes      |
+
+#### 2. Social/SSO authentication API
+
+##### Get authorization URL
+
+`POST /experience/api/{social|SSO}/:connectorId/authorization-url`
+
+The `authorization-url` API is used to generate an authorization URL for the user to authenticate with a third-party social or enterprise identity provider.
+
+This will initiate a new social/SSO sign-in interaction event.
+
+##### Authenticate
+
+`POST /experience/api/{social|SSO}/:connectorId/authenticate`
+
+Authenticate the user with the social/SSO provider and return the user's social/SSO identity.
+
+Request body:
+
+| Field | Type                   | Description                                |
+| ----- | ---------------------- | ------------------------------------------ |
+| data  | Record<string, string> | callback data from the social/SSO provider |
+
+##### Register new account with social/SSO identity
+
+`POST /experience/api/{social|SSO}/:connectorId/register`
+
+Create a new social/SSO account if the social/SSO identity is not found in the Logto system.
+
+:::note
+This API will turn a social/SSO sign-in event into a register event.
+:::
+
+##### Link social/SSO identity to existing account
+
+`POST /experience/api/social/:connectorId/link`
+
+Link social identity to an existing account. Logto will use the `verified_email` from the social identity to find the existing account.
+
+:::note
+SSO identity will be automatically linked to the existing account if the social/SSO identity is found in the Logto system.
+:::
+
+#### 3. Profile management API
+
+##### Update profile
+
+`PATCH /experience/api/profile`
+
+The `profile` API is used to update the user's profile information in the Logto system. For identifier update a valid `verification record` must be provided.
+
+Request body:
+
+| Field        | Type                            | Description                                       | Required                       |
+| ------------ | ------------------------------- | ------------------------------------------------- | ------------------------------ |
+| email        | string                          | The user's email address.                         | No                             |
+| phone        | string                          | The user's phone number.                          | No                             |
+| username     | string                          | The user's username.                              | No                             |
+| name         | string                          | The user's full name.                             | No                             |
+| profile      | Profile                         | The user's profile information.                   | No                             |
+| verification | Verification<verification_code> | The security data to verify the given identifier. | No (Yes for identifier update) |
+
+##### Skip MFA setup
+
+`POST /experience/api/profile/mfa-skipped`
+
+The `mfa-skipped` API is used to skip the MFA setup process for the user.
+
+#### 4. Verification API
+
+##### Generate verification code
+
+`POST /experience/api/verification/verification-code/generate`
+
+Calling the `verification-code` API will initiate a verification process for the given `identifier`. A unique `verification id` will be generated for the verification process. The user must provide the `verification id` and the `verification code` to verify the given `identifier`.
+
+Request body:
+
+| Field            | Type             | Description                                                     | Required |
+| ---------------- | ---------------- | --------------------------------------------------------------- | -------- |
+| identifier       | Identifier       | The user's `identifier`.                                        | Yes      |
+| interactionEvent | InteractionEvent | The `interaction event` that triggers the verification process. | Yes      |
+
+A unique `verification id` will be generated for the verification process.
+
+Response body:
+
+```ts
+{
+  verificationId: string;
+}
+```
+
+##### Verify verification code
+
+`POST /experience/api/verification/verification-code/verify`
+
+The `verification-code/verify` API is used to verify the given `identifier` with the provided `verification code`. The user must provide the `verification id` and the `verification code` to verify the given `identifier`. A success `verification record` will be created for the given `identifier` if the verification is successful.
+
+Request body:
+
+| Field          | Type       | Description                                           | Required |
+| -------------- | ---------- | ----------------------------------------------------- | -------- |
+| identifier     | Identifier | The user's `identifier`.                              | Yes      |
+| code           | string     | The verification code to verify the given identifier. | Yes      |
+| verificationId | string     | The unique id for the verification record.            | Yes      |
+
+##### Generate TOTP secret
+
+Create a new TOTP secret for the user to set up the TOTP MFA method.
+The new created TOTP secret will be inserted into the user's MFA settings once the verification is successful and the interaction session is submitted.
+
+`POST /experience/api/verification/totp/secret`
+
+Response body:
+
+```ts
+{
+  secret: string;
+  qrCodeUrl: string;
+  verificationId: string;
+}
+```
+
+##### Verify TOTP code
+
+`POST /experience/api/verification/totp/verify`
+
+TOTP code verification API. The user must provide the `verification id` if the TOTP is newly created.
+
+Request body:
+
+| Field           | Type   | Description                                      | Required |
+| --------------- | ------ | ------------------------------------------------ | -------- |
+| code            | string | The TOTP code to verify the TOTP MFA method      | Yes      |
+| verificationId? | string | The verification id for the new generated secret | No       |
+
+##### Create a WebAuthn registration
+
+`POST /experience/api/verification/webauthn/registration`
+
+Create a new WebAuthn registration options object for the user to verify and set up the WebAuthn MFA method.
+The new created WebAuthn credential will be inserted into the user's MFA settings once the verification is successful and the interaction session is submitted.
+
+Response body:
+
+```ts
+{
+  registrationOptions: WebAuthnRegistrationOptions;
+  verificationId: string;
+}
+```
+
+##### Create a WebAuthn authentication
+
+`POST /experience/api/verification/webauthn/authentication`
+
+Create a new WebAuthn authentication options object for the user to verify the WebAuthn MFA method.
+
+Response body:
+
+```ts
+{
+  authenticationOptions: WebAuthnAuthenticationOptions;
+  verificationId: string;
+}
+```
+
+##### Verify WebAuthn
+
+`POST /experience/api/verification/webauthn/verify`
+
+Verify the WebAuthn MFA method with the provided WebAuthn assertion.
+
+Request body:
+
+| Field             | Type              | Description                                                   | Required |
+| ----------------- | ----------------- | ------------------------------------------------------------- | -------- |
+| webauthnAssertion | WebAuthnAssertion | The WebAuthn assertion data to verify the WebAuthn MFA method | Yes      |
+| verificationId    | string            | The verification record id                                    | Yes      |
+
+##### Create backup codes
+
+`POST /experience/api/verification/backup-codes/generate`
+
+Generate a new set of backup codes for the user to set up the Backup Code MFA method.
+The new created backup codes will be inserted into the user's MFA settings once the verification is successful and the interaction session is submitted.
+
+Response body:
+
+```ts
+{
+  backupCodes: string[];
+  verificationId: string;
+}
+```
+
+##### Verify backup code
+
+`POST /experience/api/verification/backup-code/verify`
+
+Verify the Backup Code MFA method with the provided backup code.
+
+Request body:
+
+| Field      | Type   | Description                                   | Required |
+| ---------- | ------ | --------------------------------------------- | -------- |
+| backupCode | string | the backup code to verify the Backup Code MFA | Yes      |
+
+#### 5. Interaction session API
+
+##### Submit interaction session
+
+`POST /experience/api/submit`
+
+The `submit` API is used to submit the user's interaction session to the Logto platform. The user must provide a valid interaction session to authenticate and access the platform resources.
+
+If any new profile or MFA settings are updated during the interaction session, the user must submit the interaction session to save the changes.
+
+##### Get interaction session status
+
+`GET /experience/api/session-status`
+
+The `session-status` API is used to get the current status of the user's interaction session. The user can use this API to check the progress and missing security checks during the interaction flow.
