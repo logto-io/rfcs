@@ -404,3 +404,54 @@ If any new profile or MFA settings are updated during the interaction session, t
 `GET /experience/api/session-status`
 
 The `session-status` API is used to get the current status of the user's interaction session. The user can use this API to check the progress and missing security checks during the interaction flow.
+
+### B. User interaction flow
+
+#### 1. Register
+
+When a user signs up for a new account, they need to provide at least one identifier to uniquely identify themselves in the Logto system. The identifier must be verified before it can be used for future identification.
+
+```mermaid
+graph TD
+   A[User] --> B[Provide identifier]
+   B --> C[Verify identifier]
+   C -.-> E[MFA set up]
+   C -.-> F[Provide user profile]
+   C -.-> G[Provide additional identifier]
+   G -.-> H[Verify new identifier]
+   E --> I[Submit interaction session]
+   F --> I
+   H --> I
+```
+
+#### 2. Sign in
+
+When a user signs in to an existing account, they need to provide at least one identifier to identify themselves in the Logto system.
+
+```mermaid
+graph TD
+  A[User] --> B[Provide identifier]
+  B --> C[Verify identifier]
+  C --> D[Verify identity]
+  D -.-> E[MFA verifications?]
+  E -.-> F[Provide user profile]
+  E -.-> G[Provide new identifiers]
+  E -.-> I[Provide new verifications]
+  G -.-> H[Verify new identifier]
+  F --> J[Submit interaction session]
+  H --> J
+  I --> J
+```
+
+#### 3. Forgot password
+
+When a user resets their password, they need to provide at least one identifier to identify themselves in the Logto system. Currently, Logto only supports resetting the password using the email or phone identifier with a verification code verification factor.
+
+```mermaid
+graph TD
+   A[User] --> B[Provide identifier]
+   B --> C[Verify identifier]
+   C --> D[Verify identity]
+   D --> E[Provide new password]
+   E --> F[Sign-in again]
+```
