@@ -149,6 +149,15 @@ To better understand the user interaction flow, we need to understand the lifecy
 | `verified`                | The user has provide all necessary verification records.                                       | The user is fully verified by the Logto system. The user can proceed to the user profile completion and authentication process based on the SIE settings. |
 | `authenticated`           | The interaction session has been submitted. Authorization granted                              | The user can access the platform resources and services. The interaction session will be terminated once the user logs out or the session expires.        |
 
+### 5.2 Interaction session data
+
+| Field               | Type             | Description                                                                                                                                    |
+| ------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| interactionEvent    | InteractionEvent | he interaction event for the current interaction session.                                                                                      |
+| accountId           | string           | The accountId of the user for the current interaction session. Only available once the user is identified by at least one verified identifier. |
+| verificationRecords | Verification[]   | The verification record list attached to the current interaction session.                                                                      |
+| profile             | Profile          | The user provided profile data in the current interaction session that needs to be stored to user DB.                                          |
+
 ## Appendix
 
 ### A. Experience APIs
