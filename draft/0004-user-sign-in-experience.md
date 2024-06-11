@@ -1,90 +1,42 @@
 ---
-Start data: 2024-05-24
+Start date: 2024-05-24
 Author(s): [simeng-li]
 Revision: 1
 ---
 
-# User interaction flow and experience APIs
-
-**Table of Contents**
-
-- [1. Abstract](#1-abstract)
-- [2. Motivation](#2-motivation)
-- [3. Introduction](#3-introduction)
-  - [3.1 Terminology](#31-terminology)
-- [4. Definitions](#4-definitions)
-  - [4.1 Interaction events](#41-interaction-events)
-  - [4.2 Identifiers](#42-identifiers)
-  - [4.3 Verification records](#43-verification-records)
-  - [4.4 Profile](#44-profile)
-  - [4.5 Multi-Factor Authentication(MFA)](#45-multi-factor-authenticationmfa)
-- [5. Interaction session](#5-interaction-session)
-  - [5.1 Interaction session lifecycle](#51-interaction-session-lifecycle)
-- [Appendix](#appendix)
-  - [A. Experience APIs](#a-experience-apis)
-    - [1. Interaction events API](#1-interaction-events-api)
-      - [Register](#register)
-      - [Sign in](#sign-in)
-      - [Forgot password](#forgot-password)
-    - [2. Social/SSO authentication API](#2-socialsso-authentication-api)
-      - [Get authorization URL](#get-authorization-url)
-      - [Authenticate](#authenticate)
-      - [Register new account with social/SSO identity](#register-new-account-with-socialsso-identity)
-      - [Link social/SSO identity to existing account](#link-socialsso-identity-to-existing-account)
-    - [3. Profile management API](#3-profile-management-api)
-      - [Update profile](#update-profile)
-      - [Skip MFA setup](#skip-mfa-setup)
-    - [4. Verification API](#4-verification-api)
-      - [Generate verification code](#generate-verification-code)
-      - [Verify verification code](#verify-verification-code)
-      - [Generate TOTP secret](#generate-totp-secret)
-      - [Verify TOTP code](#verify-totp-code)
-      - [Create a WebAuthn registration](#create-a-webauthn-registration)
-      - [Create a WebAuthn authentication](#create-a-webauthn-authentication)
-      - [Verify WebAuthn](#verify-webauthn)
-      - [Create backup codes](#create-backup-codes)
-      - [Verify backup code](#verify-backup-code)
-    - [5. Interaction session API](#5-interaction-session-api)
-      - [Submit interaction session](#submit-interaction-session)
-      - [Get interaction session status](#get-interaction-session-status)
-  - [B. User interaction flow](#b-user-interaction-flow)
-    - [1. Register](#1-register)
-    - [2. Sign in](#2-sign-in)
-    - [3. Forgot password](#3-forgot-password)
+# Sign-in experience and experience APIs
 
 ## 1. Abstract
 
-User interaction flow is a key part of the [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) authentication process in Logto. It is the process of communication between the user and the Logto platform. Upon each user authentication request, the user will be prompted to provide their credentials. The user will then be able to interact with the platform through the user interface.
+Sign-in experience (SIE) is the process of user authentication in the Logto platform. It includes the user interface and experience APIs that allow end-users to interact with the Logto platform for identity verification and profile management.
 
 ## 2. Motivation
 
-The user interaction flow as well as the `experience APIs` are designed to be intuitive and developer-friendly. The goal is to provide a seamless and secure authentication process for users. Allowing developers to customize the user experience to suit their needs.
+In Logto, we support a variety of modern authentication methods such as password, social login, and multi-factor authentication (MFA). Developers may require a flexible and customizable sign-in experience to meet their specific use cases.
 
-Current version of user interaction APIs in Logto are neither well-documented nor publicly available for developers. This document aims to provide a comprehensive overview of the user interaction flow and introduce a whole new version of user `experience APIs` in Logto.
-
-## 3. Introduction
-
-A complete user interaction flow can be divided into following steps:
-
-1. **identification**: The user needs to provide a unique `identifier` to the platform. This can be a username, email address, or third-party social identity. It will be used to uniquely identify the user in the system.
-2. **verification**: The `verification` process is used to verify the user's identity by asking for additional security information. This can be a password, a one-time code, or a passkey. Upon the security settings multiple verification methods can be used.
-3. **profile completion**: The user may be prompted to complete their `profile` and `mfa` settings during a interaction session. This can be a first-time user registration, a mandatory profile and `mfa` settings update for exiting users, or a additional third-party identity linking.
-4. **authentication**: The last step is the `authentication` process. The user will be authenticated and granted access to the platform by submitting current interaction session once all the mandatory security checks are resolved.
+Current version of `Experience APIs` in Logto are neither well-documented nor publicly available for the developers. This document aims to provide a comprehensive overview of the SIE model in Logto and introduce a new set of `Experience APIs` that allow developers to build a customized sign-in experience for their users.
 
 ### 3.1 Terminology
 
-- **sign-in experience(SIE)**: A user's experience when interacting with Logto platform. Including the front-end UI and the back-end API calls.
-- **experience APIs**: A set of APIs that allow end-users to interact with the Logto for identity verification and profile management.
-- **interaction session**: A session that is initiated when a user starts interacting with the Logto platform. The session will be terminated once the user logs out or the session expires.
-- **experience app**: The front-end application that provides the user interface for the user interaction flow.
-- **social/Single Sign-On(SSO) identity**: A third-party identity provider that allows users to sign in to the Logto platform using their social media or enterprise SSO accounts.
-- **identifier**: A piece of information that can be used to identify a user in the Logto system. For example, username, email, phone number, or social/SSO identity.
-- **verification record**: A `verification record` is a group of security data can be used to verify a user's identity by such as password, verification code, or TOTP code.
-- **verification code**: A one-time code sent to the user's email or phone number for identity verification.
-- **verification id**: The unique identifier for a verification record. Generated by the Logto server when a verification flow is initiated. User need to provide the verification id along with additional security information to verify their identity. The verification id can also be used to track the verification record status within the interaction session.
+- **Sign-in experience(SIE)**: A user's experience when interacting with Logto platform. Including the front-end user interface and the back-end API calls.
+- **Experience APIs**: A set of APIs that allow end-users to interact with the Logto for identity verification and profile management.
+- **Interaction session**: A session that is initiated when a user starts interacting with the Logto platform. The session will be terminated once the user logs out or the session expires.
+- **Experience app**: The front-end application that provides the user interface for the user interaction flow.
+- **Social/Single Sign-On(SSO) identity**: A third-party identity provider that allows users to sign in to the Logto platform using their social media or enterprise SSO accounts.
+- **Identifier**: A piece of information that can be used to identify a user in the Logto system. For example, username, email, phone number, or social/SSO identity.
+- **Verification record**: A `verification record` is a group of security data can be used to verify a user's identity by such as password, verification code, or TOTP code.
+- **Verification code**: A one-time code sent to the user's email or phone number for identity verification.
+- **Verification id**: The unique identifier for a verification record. Generated by the Logto server when a verification flow is initiated. User need to provide the verification id along with additional security information to verify their identity. The verification id can also be used to track the verification record status within the interaction session.
 - **Multi-Factor Authentication(MFA)**: A security process that requires more than one verification factor to verify a user's identity.
 
 ## 4. Definitions
+
+A complete user `Sign-in experience` in Logto consists of four key steps:
+
+1. **Identification**: The user needs to provide a unique `identifier` to the platform. This can be a username, email address, or third-party social identity. It will be used to uniquely identify the user in the system.
+2. **Verification**: The `verification` process is used to verify the user's identity by asking for additional security information. This can be a password, a one-time code, or a passkey. Upon the security settings multiple verification methods can be used.
+3. **Profile completion**: The user may be prompted to complete their `profile` and `mfa` settings during a interaction session. This can be a first-time user registration, a mandatory profile and `mfa` settings update for exiting users, or a additional third-party identity linking.
+4. **Authentication**: The last step is the `authentication` process. The user will be authenticated and granted access to the platform by submitting current interaction session once all the mandatory security checks are resolved.
 
 ### 4.1 Interaction events
 
@@ -100,33 +52,33 @@ Interaction events helps to track the user's progress during the interaction ses
 
 `Identifiers` are used to uniquely identify a user in the Logto system. The following are the types of `identifiers` supported by the Logto platform:
 
-- **username**: A unique username chosen by the user during the registration process.
-- **email**: A verified user's email address.
-- **phone**: A verified user's phone number.
-- **social/SSO identity**: A verified third-party social or enterprise identity.
+- **Username**: A unique username chosen by the user during the registration process.
+- **Email**: A verified user's email address.
+- **Phone**: A verified user's phone number.
+- **Social/SSO identity**: A verified third-party social or enterprise identity.
 
 Before a user can claim an identifier for future identification use, some identifiers must be verified by the user to ensure the ownership of the identifier. The verification process can be done by creating a verification record and providing the necessary security information. Following are the identifier verification methods supported by the Logto platform:
 
 | Identifier Type | Verification Method       |
 | --------------- | ------------------------- |
-| email           | email verification        |
-| phone           | phone verification        |
-| social/SSO      | social/SSO authentication |
+| Email           | email verification        |
+| Phone           | phone verification        |
+| Social/SSO      | social/SSO authentication |
 
 ### 4.3 Verification records
 
 A coming user must provide at least one `verification record` to verify their identity. A `verification record` is a record that contains the necessary security information to verify a user's identity. The following are the types of `verification records` supported by the Logto platform:
 
-- **password**: A user's password, the most common way to verify a user's identity.
-- **verification code**: A one-time code sent to the user's email or phone number for identity verification.
+- **Password**: A user's password, the most common way to verify a user's identity.
+- **Verification code**: A one-time code sent to the user's email or phone number for identity verification.
 - **TOTP code(MFA only)**: A time-based one-time code generated by a TOTP app for identity verification.
-- **webauthn(MFA only)**: A webauthn credential that can be used to verify a user's identity.
-- **backup code(MFA only)**: A group of backup codes that can be used to verify a user's identity when the rest of verification methods are not available.
-- **social/SSO authentication**: A well authenticated social/SSO identity that can be used to verify a user's identity directly.
+- **Webauthn(MFA only)**: A webauthn credential that can be used to verify a user's identity.
+- **Backup code(MFA only)**: A group of backup codes that can be used to verify a user's identity when the rest of verification methods are not available.
+- **Social/SSO authentication**: A well authenticated social/SSO identity that can be used to verify a user's identity directly.
 
 ### 4.4 Profile
 
-User profile is the user's personal information stored in the Logto system. The user profile includes the data that can be used as a `identifier` for the user, such as username, email, phone number, and social/SSO identity, and other personal information such as name, address, and profile picture.
+User profile is the user's personal information stored in the Logto system. The user profile includes the data that can be used as a `identifier` for the user, such as username, email, phone number, and social/SSO identity, as well as other personal information such as name, address, and profile picture.
 
 The user profile can be updated by the user during the interaction session. The Logto platform can use the user profile to provide a personalized user experience and security checks based on the SIE settings.
 
@@ -158,13 +110,17 @@ To better understand the user interaction flow, we need to understand the lifecy
 | verificationRecords | Verification[]   | The verification record list attached to the current interaction session.                                                                      |
 | profile             | Profile          | The user provided profile data in the current interaction session that needs to be stored to user DB.                                          |
 
-## Appendix
+## 6. Drawbacks
 
-### A. Experience APIs
+## 7. Rationale and alternatives
+
+## 8.Future possibilities
+
+## Appendix A. Experience APIs
 
 The experience APIs are a set of APIs that allow end-users to interact with the Logto platform to complete the user interaction flow.
 
-#### 1. Interaction events API
+### 1. Interaction events API
 
 ```ts
 type Identifier = {
@@ -181,7 +137,7 @@ type Verification = {
 };
 ```
 
-##### Register
+#### Register
 
 `POST /experience/api/register`
 
@@ -221,11 +177,11 @@ Request body:
 | identifier   | Identifier   | The user's `identifier`.                     | Yes      |
 | verification | Verification | Security data to verify the user's identity. | Yes      |
 
-#### 2. Social/SSO authentication API
+### 2. Social/SSO authentication API
 
-##### Get authorization URL
+#### Get authorization URL
 
-`POST /experience/api/{social|SSO}/:connectorId/authorization-url`
+`POST /experience/api/{social|sso}/:connectorId/authorization-url`
 
 The `authorization-url` API is used to generate an authorization URL for the user to authenticate with a third-party social or enterprise identity provider.
 
@@ -233,7 +189,7 @@ This will initiate a new social/SSO sign-in interaction event.
 
 ##### Authenticate
 
-`POST /experience/api/{social|SSO}/:connectorId/authenticate`
+`POST /experience/api/{social|sso}/:connectorId/authenticate`
 
 Authenticate the user with the social/SSO provider and return the user's social/SSO identity.
 
@@ -245,7 +201,7 @@ Request body:
 
 ##### Register new account with social/SSO identity
 
-`POST /experience/api/{social|SSO}/:connectorId/register`
+`POST /experience/api/{social|sso}/:connectorId/register`
 
 Create a new social/SSO account if the social/SSO identity is not found in the Logto system.
 
@@ -263,9 +219,9 @@ Link social identity to an existing account. Logto will use the `verified_email`
 SSO identity will be automatically linked to the existing account if the social/SSO identity is found in the Logto system.
 :::
 
-#### 3. Profile management API
+### 3. Profile management API
 
-##### Update profile
+#### Update profile
 
 `PATCH /experience/api/profile`
 
@@ -288,9 +244,9 @@ Request body:
 
 The `mfa-skipped` API is used to skip the MFA setup process for the user.
 
-#### 4. Verification API
+### 4. Verification API
 
-##### Generate verification code
+#### Generate verification code
 
 `POST /experience/api/verification/verification-code/generate`
 
@@ -429,9 +385,9 @@ Request body:
 | ---------- | ------ | --------------------------------------------- | -------- |
 | backupCode | string | the backup code to verify the Backup Code MFA | Yes      |
 
-#### 5. Interaction session API
+### 5. Interaction session API
 
-##### Submit interaction session
+#### Submit interaction session
 
 `POST /experience/api/submit`
 
@@ -445,9 +401,9 @@ If any new profile or MFA settings are updated during the interaction session, t
 
 The `session-status` API is used to get the current status of the user's interaction session. The user can use this API to check the progress and missing security checks during the interaction flow.
 
-### B. User interaction flow
+## Appendix B. User interaction flow
 
-#### 1. Register
+### 1. Register
 
 When a user signs up for a new account, they need to provide at least one identifier to uniquely identify themselves in the Logto system. The identifier must be verified before it can be used for future identification.
 
@@ -464,7 +420,7 @@ graph TD
    H --> I
 ```
 
-#### 2. Sign in
+### 2. Sign in
 
 When a user signs in to an existing account, they need to provide at least one identifier to identify themselves in the Logto system.
 
