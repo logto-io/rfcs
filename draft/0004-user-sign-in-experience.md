@@ -176,14 +176,21 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
    - **verificationRecords**: OPTIONAL. Verification records may be created before the user is identified.
    - **profile**: NULL. The user can not provide profile data before they are identified and verified.
 
-2. ProfileFulfilled: The user has provided all the necessary profile data and MFA settings during the interaction.
+2. Identified: The user has at least one necessary identifier provided that can uniquely identify the user.
 
    - **accountId**: NULL. Not available for the register interaction.
    - **interactionEvent**: REQUIRED. Register interaction event has been specified.
-   - **verificationRecords**: REQUIRED. All the necessary verification records are created and verified. (Including the fulfilled profile and MFA settings verification records.)
+   - **verificationRecords**: OPTIONAL. Required if the user has provided a verified identifier. NULL if username is used as the identifier.
+   - **profile**: REQUIRED. The user have provided the necessary sign-up identifier.
+
+3. ProfileFulfilled: The user has provided all the necessary profile data and MFA settings during the interaction.
+
+   - **accountId**: NULL. Not available for the register interaction.
+   - **interactionEvent**: REQUIRED. Register interaction event has been specified.
+   - **verificationRecords**: OPTIONAL. All the necessary verification records are created and verified. (Including the fulfilled profile and MFA settings verification records.)
    - **profile**: REQUIRED. The user has provided all the necessary profile data during the interaction.
 
-3. Submitted: The user has submitted the interaction to Logto for authentication. New user account will be created in the user database. Continue to the consent and authorization process.
+4. Submitted: The user has submitted the interaction to Logto for authentication. New user account will be created in the user database. Continue to the consent and authorization process.
 
 ### 5.4 Forgot password event interaction status
 
@@ -438,7 +445,7 @@ Request body:
 #### Generate TOTP secret
 
 Create a new TOTP secret for the user to set up the TOTP MFA method.
-The new created TOTP secret will be inserted into the user's MFA settings once the verification is successful and the interaction session is submitted.
+The new created TOTP secret will be inserted into the user's MFA settings once the verification is successful and the interaction is submitted.
 
 `POST /api/experience/verification/totp/secret`
 
@@ -470,7 +477,7 @@ Request body:
 `POST /api/experience/verification/webAuthn/registration`
 
 Create a new WebAuthn registration options object for the user to verify and set up the WebAuthn MFA method.
-The new created WebAuthn credential will be inserted into the user's MFA settings once the verification is successful and the interaction session is submitted.
+The new created WebAuthn credential will be inserted into the user's MFA settings once the verification is successful and the interaction is submitted.
 
 Response body:
 
@@ -514,7 +521,7 @@ Request body:
 `POST /api/experience/verification/backup-codes/generate`
 
 Generate a new set of backup codes for the user to set up the Backup Code MFA method.
-The new created backup codes will be inserted into the user's MFA settings once the verification is successful and the interaction session is submitted.
+The new created backup codes will be inserted into the user's MFA settings once the verification is successful and the interaction is submitted.
 
 Response body:
 
@@ -543,9 +550,9 @@ Request body:
 
 `POST /api/experience/submit`
 
-The `submit` API is used to submit the user's interaction session to the Logto. The user must provide a valid interaction session to authenticate and access the platform resources.
+The `submit` API is used to submit the user's interaction to the Logto. The user must provide a valid interaction to authenticate and access the platform resources.
 
-If any new profile or MFA settings are updated during the interaction session, the user must submit the interaction session to save the changes.
+If any new profile or MFA settings are updated during the interaction, the user must submit the interaction to save the changes.
 
 #### Get interaction status
 
