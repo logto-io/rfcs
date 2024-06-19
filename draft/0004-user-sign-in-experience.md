@@ -280,7 +280,12 @@ Develop a client-side SDK that simplifies the integration of the experience APIs
 
 The experience API are a set of APIs that allow end-users to interact with the Logto to complete the user sign-in experience.
 
-### 1. Interaction events API
+### 1. Interaction authentication API
+
+The interaction authentication API is the core set of APIs to authenticate the user during the sign-in experience. The user must provide the necessary data to identify and verify themselves in the interaction.
+
+- **Specify interaction event type**: Define the type of interaction event to be initiated. Each interaction event has its own API endpoint to start the interaction.
+- **Provide necessary identifiers and verification record**: Supply the required identifiers and verification record to advance the interaction to the identified status.
 
 ```ts
 type Identifier = {
@@ -305,10 +310,11 @@ The `register` API is used to create a new account in the Logto system. The user
 
 Request body:
 
-| Field        | Type         | Description                                  | Required |
-| ------------ | ------------ | -------------------------------------------- | -------- |
-| identifier   | Identifier   | The user's `identifier`.                     | Yes      |
-| verification | Verification | Security data to verify the user's identity. | Yes      |
+| Field          | Type         | Description                                        | Required |
+| -------------- | ------------ | -------------------------------------------------- | -------- |
+| identifier     | Identifier   | The user's `identifier`.                           | Yes      |
+| verification   | Verification | Security data to verify the user's identity.       | Yes      |
+| verificationId | string       | The unique id for a existing `verification record` | No       |
 
 #### Sign in
 
@@ -339,6 +345,8 @@ Request body:
 
 ### 2. Social/SSO authentication API
 
+The social/SSO authentication API is used to authenticate the user with a third-party social or enterprise identity provider. The user must provide the necessary data to authenticate with the social/SSO provider and link the social/SSO identity to their Logto account. Social/SSO authentication API will automatically create a social/SSO verification record and identify the user for the interaction.
+
 #### Get authorization URL
 
 `POST /api/experience/{social|sso}/:connectorId/authorization-url`
@@ -351,7 +359,7 @@ This will initiate a new social/SSO sign-in interaction event.
 
 `POST /api/experience/{social|sso}/:connectorId/authenticate`
 
-Authenticate the user with the social/SSO provider and return the user's social/SSO identity.
+Authenticate the user with the social/SSO provider and return the user's social/SSO identity. Create a new social/SSO verification record and identify the user for the interaction.
 
 Request body:
 
@@ -366,48 +374,26 @@ Request body:
 Create a new social/SSO account if the social/SSO identity is not found in the Logto system.
 
 :::note
-This API will turn a social/SSO sign-in event into a register event.
+This API will turn a social/SSO sign-in event into a register event and append the social/SSO identity to the user's profile.
 :::
 
 #### Link social/SSO identity to existing account
 
 `POST /api/experience/social/:connectorId/link`
 
-Link social identity to an existing account. Logto will use the `verified_email` from the social identity to find the existing account.
+Link social identity to an existing account. Logto will use the `verified_email` from the social identity to find the existing account. Identify the user with the verified email and append the social identity to the user's profile.
 
 :::note
 SSO identity will be automatically linked to the existing account if the social/SSO identity is found in the Logto system.
 :::
 
-### 3. Profile management API
+### 3. Verification API
 
-#### Update profile
-
-`PATCH /api/experience/profile`
-
-The `profile` API is used to update the user's profile information in the Logto system. For identifier update a valid `verification record` must be provided.
-
-Request body:
-
-| Field        | Type                            | Description                                       | Required                                |
-| ------------ | ------------------------------- | ------------------------------------------------- | --------------------------------------- |
-| email        | string                          | The user's email address.                         | No                                      |
-| phone        | string                          | The user's phone number.                          | No                                      |
-| username     | string                          | The user's username.                              | No                                      |
-| password     | string                          | The user's password.                              | No (Yes for password update)            |
-| verification | Verification<verification_code> | The security data to verify the given identifier. | No (Yes for verified identifier update) |
-
-#### Skip MFA setup
-
-`POST /api/experience/profile/mfa-skipped`
-
-The `mfa-skipped` API is used to skip the MFA setup process for the user.
-
-### 4. Verification API
+The verification API is a set of APIs used to create and verify a verification record for the user during the sign-in experience.
 
 #### Generate verification code
 
-`POST /api/experience/verification/verification-code/generate`
+`POST /api/experience/verification/verification-code`
 
 Calling the `verification-code` API will initiate a verification process for the given `identifier`. A unique `verification id` will be generated for the verification process. The user must provide the `verification id` and the `verification code` to verify the given `identifier`.
 
@@ -543,6 +529,32 @@ Request body:
 | Field      | Type   | Description                                   | Required |
 | ---------- | ------ | --------------------------------------------- | -------- |
 | backupCode | string | the backup code to verify the Backup Code MFA | Yes      |
+
+### 4. Profile fulfillment API
+
+The profile fulfillment API is used to provide additional profile data and MFA settings during the sign-in experience. Upon the sign-in experience settings, the user must provide the necessary profile data and MFA settings to complete the interaction.
+
+#### Update profile
+
+`PATCH /api/experience/profile`
+
+The `profile` API is used to update the user's profile information in the Logto system. For identifier update a valid `verification record` must be provided.
+
+Request body:
+
+| Field        | Type                            | Description                                       | Required                                |
+| ------------ | ------------------------------- | ------------------------------------------------- | --------------------------------------- |
+| email        | string                          | The user's email address.                         | No                                      |
+| phone        | string                          | The user's phone number.                          | No                                      |
+| username     | string                          | The user's username.                              | No                                      |
+| password     | string                          | The user's password.                              | No (Yes for password update)            |
+| verification | Verification<verification_code> | The security data to verify the given identifier. | No (Yes for verified identifier update) |
+
+#### Skip MFA setup
+
+`POST /api/experience/profile/mfa-skipped`
+
+The `mfa-skipped` API is used to skip the MFA setup process for the user.
 
 ### 5. Interaction API
 
