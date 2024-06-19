@@ -79,7 +79,7 @@ A verification record contains the necessary security information to verify a us
    - **Social authentication**: An authenticated social identity used to directly verify a user's identity.
    - **SSO authentication**: An authenticated SSO identity used to directly verify a user's identity.
 
-2. Multi-Factor Authentication(MFA) verification
+2. Multi-factor authentication(MFA) verification
 
    MFA is a security process that requires more than one verification factor to confirm a user's identity. It can be used as an additional security check during user interaction. Developers can enable MFA using Logto's sign-in experience settings. Once enabled, users will be prompted to provide additional MFA verification records during the interaction.
 
