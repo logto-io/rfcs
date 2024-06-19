@@ -665,3 +665,5 @@ The profile fulfillment API is used to provide additional profile data and MFA s
   - **verificationRecordStatus**: The verification record list created during the current interaction. Only verification type, status, and verificationId are returned.
   - **profileKeys**: The user provided profile keys in the current interaction that will be updated in the user database.
   - **status**: The current status of the interaction.
+
+## Appendix B. Examples
