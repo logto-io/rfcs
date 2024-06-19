@@ -75,12 +75,12 @@ A verification record contains the necessary security information to verify a us
 
 #### 4.3.1. Primary verification
 
-Primary verification can be used to verify the user's identity during interactions with a given identifier. The following are the primary verification record types supported by Logto:
+Primary verification can be used to verify the user's identity in a interaction with a given identifier. The following are the primary verification record types supported by Logto:
 
 - **Password**: The user's password, which is the most common method for verifying identity. It can be used to verify the user's `username`, `email`, or `phone` identifier.
 - **Verification code**: A one-time code sent to the user's email or phone number for identifier verification. It can be used to verify the user's `email` or `phone` identifier.
 - **Social authentication**: An authenticated social identity used to directly identify and verify a user.
-- **SSO authentication**: An authenticated SSO identity used to directly directly identify and verify a user.
+- **SSO authentication**: An authenticated SSO identity used to directly identify and verify a user.
 
 #### 4.3.2. Multi-factor authentication(MFA) verification
 
