@@ -310,11 +310,10 @@ The `register` API is used to create a new account in the Logto system. The user
 
 Request body:
 
-| Field          | Type         | Description                                        | Required |
-| -------------- | ------------ | -------------------------------------------------- | -------- |
-| identifier     | Identifier   | The user's `identifier`.                           | Yes      |
-| verification   | Verification | Security data to verify the user's identity.       | Yes      |
-| verificationId | string       | The unique id for a existing `verification record` | No       |
+| Field        | Type         | Description                                  | Required |
+| ------------ | ------------ | -------------------------------------------- | -------- |
+| identifier   | Identifier   | The user's `identifier`.                     | Yes      |
+| verification | Verification | Security data to verify the user's identity. | Yes      |
 
 #### Sign in
 
@@ -324,11 +323,10 @@ The `sign-in` API is used to sign in to an existing account in the Logto system.
 
 Request body:
 
-| Field          | Type         | Description                                        | Required |
-| -------------- | ------------ | -------------------------------------------------- | -------- |
-| identifier     | Identifier   | The user's `identifier`.                           | Yes      |
-| verification   | Verification | Security data to verify the user's identity.       | No       |
-| verificationId | string       | The unique id for a existing `verification record` | No       |
+| Field        | Type         | Description                                  | Required |
+| ------------ | ------------ | -------------------------------------------- | -------- |
+| identifier   | Identifier   | The user's `identifier`.                     | Yes      |
+| verification | Verification | Security data to verify the user's identity. | Yes      |
 
 #### Forgot password
 
