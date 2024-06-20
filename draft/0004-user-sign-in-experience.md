@@ -8,7 +8,7 @@ Revision: 1
 
 ## 1. Abstract
 
-Sign-in experience is the user authentication process in Logto. It encompasses both the user interface and a set of APIs. These APIs enable anonymous end-users to interact with Logto for identity verification and profile fulfillment, thereby completing the authentication process.
+Sign-in experience is the user authentication process in Logto. It encompasses both the user interface and a set of APIs. These APIs enable anonymous end-users to interact with Logto for identity verification and profile fulfillment, thereby completing the authentication and authorization process.
 
 ## 2. Motivation
 
@@ -21,8 +21,8 @@ The current version of Experience API (internally called interaction API) in Log
 ### 3.1 Terminology
 
 - **Sign-in experience**: A user's experience when interacting with Logto. Including the front-end user interface and the back-end API calls.
-- **Sign-in experience settings**: The configuration settings that define the behavior of the sign-in experience, including the required identifiers, verification methods, profile data, and MFA settings. Developers can customize the sign-in experience settings to meet their specific requirements.
-- **Experience API**: A set of APIs that allow end-users to interact with the Logto for identity verification and profile management.
+- **Sign-in experience settings**: The configuration settings that define the behavior of the sign-in experience。 Including the required identifiers, verification methods, profile data, and MFA settings. Developers can customize the sign-in experience settings to meet their specific requirements.
+- **Experience API**: A set of APIs that allow end-users to interact with the Logto for identity verification and profile fulfillment.
 - **Experience app**: The front-end application that provides the user interface for sign-in experience.
 - **Interaction**: A short-lived session that starts when a user initiates the sign-in experience. By default, it has an expiration time of one hour.
 - **Social identity**: The data used to identify a user within a social identity provider, such as Google.
@@ -40,9 +40,9 @@ The current version of Experience API (internally called interaction API) in Log
 The user sign-in experience in Logto consists of the following key steps:
 
 1. **Sign-in experience initiation**: When the client application sends an authentication request to Logto, the user is redirected to Logto's experience app, initiating a new interaction for the authentication process.
-2. **Identification**: The user must provide an identifier to Logto, such as a username, email address, phone number, social identity, or SSO identity. This identifier is used to recognize the user during the interaction.
-3. **Verification**: The process to verify a user's identity by requesting additional security information. This can be a password, a one-time code, a passkey, etc. Upon the security settings, multiple verification methods can be used.
-4. **Profile fulfillment**: : During the interaction, the user may be prompted to complete their profile and MFA settings. This can be necessary for user registration or mandatory updates for existing users' profiles and MFA settings.
+2. **Identification**: The user must provide an verified identifier to Logto, such as a username, email address, phone number, social identity, or SSO identity. This identifier is used to recognize the user during the interaction.
+3. **Verification**: The process to verify a user's identity by requesting additional security information. This can be a one-time code, or a passkey, etc. Upon the security settings, multiple verification methods can be used.
+4. **Profile fulfillment**: During the interaction, the user may be prompted to complete their profile and MFA settings. This can be necessary for user registration or mandatory updates for existing users' profiles and MFA settings.
 5. **Authentication**: Once the user has completed all the necessary steps, they can submit the interaction to get authenticated by Logto. All the user's profile and MFA settings updates will be saved to the user database.
 6. **Consent**: Users may need to grant consent for specific actions upon the requested authorization details. This could involve sharing personal information, allowing access for their organization, or granting permissions to specific resources. For first-party applications, consent is implicit and handled automatically by Logto once user get authenticated. For third-party applications, consent is explicit, and the user will be prompted to grant the necessary permissions after a successful interaction submission.
 7. **Authorization**: The final step in the sign-in experience. Once the user has been authenticated and consented to the necessary actions, they will be redirected back to the client application with granted authorization.
@@ -56,12 +56,12 @@ Interaction event represent the user's current interaction purpose with Logto. L
 The following are the types of interaction event supported by Logto:
 
 - **Register**: A new user signs up for a account in Logto.
-- **SignIn**: An existing user signs in to their account.
-- **ForgotPassword**: A user forgets their password and initiates an account recovery process.
+- **SignIn**: An existing user signs in to their account in Logto.
+- **ForgotPassword**: A user forgets the password and initiates an account recovery process to reset password.
 
 ### 4.2 Identifiers
 
-The following are the types of `identifiers` supported by Logto that can be used to uniquely identify a user for the interaction:
+The following are the types of `identifiers` supported by Logto that can be used to uniquely identify a user in the interaction:
 
 - **Username**: A user's unique username.
 - **Email**: A verified user's email address.
@@ -75,7 +75,7 @@ A verification record contains the necessary security information to verify a us
 
 #### 4.3.1. Primary verification
 
-Primary verification can be used to verify the user's identity in a interaction with a given identifier. The following are the primary verification record types supported by Logto:
+Primary verification can be used to verify the user's identity with a given identifier. The following are the primary verification record types supported by Logto:
 
 - **Password**: The user's password, which is the most common method for verifying identity. It can be used to verify the user's `username`, `email`, or `phone` identifier.
 - **Verification code**: A one-time code sent to the user's email or phone number for identifier verification. It can be used to verify the user's `email` or `phone` identifier.
@@ -92,25 +92,26 @@ MFA is a security process that requires more than one verification factor to con
 
 ### 4.4 User profile
 
-The user profile consists of the user data that will be stored in the Logto user database. Any new profile data provided by the user during the interaction will be saved to the database once the interaction is submitted. Developers can use Logto sign-in experience settings to define the required profile data and MFA settings for the user during the interaction.
+The user profile consists of the user data that will be stored in the Logto user database. Any new profile data provided by the user in a interaction will be saved to the database once the interaction is submitted.
+Developers can use Logto sign-in experience settings to define the required profile data and MFA settings that need to be collected from the user during the interaction.
 
 #### 4.4.1 User identifier
 
-The profile data can be used as unique identifiers for the user within the sign-in experience.
+The profile data that can be used as unique identifiers for the user within the sign-in experience.
 
-- **Username**: A unique username used to identify the user in the interaction.
-- **Email**: Requires a verified `verification code` record for the email address in the interaction to claim the ownership of the email address.
-- **Phone**: Requires a verified `verification code` record for the phone number in the interaction to claim the ownership of the phone number.
-- **Social Identity**: Requires a authenticated `social authentication` record to verify the social identity in the interaction.
-- **SSO Identity**: Requires a authenticated `SSO authentication` record to verify the SSO identity in the interaction.
+- **Username**: A unique username to identify the user in Logto.
+- **Email**: Requires a verified `verification code` verification record for the email address in the interaction to claim the ownership of the email address.
+- **Phone**: Requires a verified `verification code` verification record for the phone number in the interaction to claim the ownership of the phone number.
+- **Social Identity**: Requires a authenticated `social authentication` verification record to verify the social identity in the interaction.
+- **SSO Identity**: Requires a authenticated `SSO authentication` verification record to verify the SSO identity in the interaction.
 
 #### 4.4.3 Password
 
-The user's password, that can be used as a primary verification method to verify the user's identity during the interaction. The password can be set, updated, based on the user's interaction event.
+The user's password, that can be used as a primary verification method to verify the user's identity during the interaction. The password can be set, updated, based on different interaction events:
 
-- The `password` can be set during the `register` interaction event.
-- The `password` can be set and updated during the `forgot-password` interaction event.
-- The `password` can be set during the `sign-in` interaction event ONLY if the user has not set a password.
+- The `password` can be set during the `Register` interaction event.
+- The `password` can be set and updated during the `ForgotPassword` interaction event.
+- The `password` can be set during the `SignIn` interaction event only if the user has not set a password before.
 
 #### 4.4.3 MFAs settings
 
@@ -126,21 +127,21 @@ Logto uses the interaction to track the user's progress and status during the si
 
 ### 5.1 Interaction schema
 
-- **accountId**: The userId of the user for the current interaction. Only available once the user is identified by at least one verified identifier.
+- **accountId**: The unique ID of the user for the current interaction. Only available once the user is identified by at least one verified identifier.
 - **interactionEvent**: The interaction event for the current interaction.
 - **verificationRecords**: The verification record list created during the current interaction.
 - **profile**: The user provided profile data in the current interaction that needs to be updated in the user database.
 
 ### 5.2 Interaction status
 
-In a sign-in experience, the user's interaction progress be tracked based on the sign-in experience settings and data provided by the user.
+In a sign-in experience, the user's interaction progress will be tracked based on the sign-in experience settings and the data provided by the user. Interaction status will be used to determine the user's current progress and the required actions to complete the interaction.
 
 - **Initiated**: The interaction is initiated by the user.
 - **Identified**: The user is identified by a verified identifier.
 - **Verified**: The user is verified by all the necessary verification records, including the MFA.
 - **ProfileFulfilled**: The user has provided all the necessary profile data and MFA settings.
 
-#### 5.2.1 Sign-in event interaction status
+#### 5.2.1 Sign-in interaction status
 
 Based on the user's sign-in experience progress and user provided data, Logto will track the sign-in interaction using the following status:
 
@@ -149,20 +150,20 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
    - **accountId**: NULL. The user has not been identified yet.
    - **interactionEvent**: OPTIONAL. The interaction event may or may not be specified.
    - **verificationRecords**: OPTIONAL. Verification records may be created but not verified yet.
-   - **profile**: NULL. The user can not provide profile data before they are identified and verified.
+   - **profile**: NULL. The user can not provide profile data until they are identified and verified.
 
 2. Identified: The user is identified by at least one verified identifier.
 
    - **accountId**: REQUIRED. The userId of the user for the current interaction.
-   - **interactionEvent**: REQUIRED. Sign-in interaction event has been specified.
+   - **interactionEvent**: REQUIRED. `SignIn` interaction event has been specified.
    - **verificationRecords**: REQUIRED.
      - The identifier verification records are created and verified.
-   - **profile**: NULL. The user can not provide profile data before they are verified.
+   - **profile**: NULL. The user can not provide profile data until they are verified.
 
 3. Verified: The user is verified by all the necessary verification records, including the MFA.
 
    - **accountId**: REQUIRED. The userId of the user for the current interaction.
-   - **interactionEvent**: REQUIRED. Sign-in interaction event has been specified.
+   - **interactionEvent**: REQUIRED. The `SignIn` interaction event has been specified.
    - **verificationRecords**: REQUIRED.
      - The identifier verification records are created and verified.
      - All the necessary MFA verification records are created and verified.
@@ -171,7 +172,7 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
 4. ProfileFulfilled: The user has provided all the necessary profile data and MFA settings during the interaction.
 
    - **accountId**: REQUIRED. The userId of the user for the current interaction.
-   - **interactionEvent**: REQUIRED. Sign-in interaction event has been specified.
+   - **interactionEvent**: REQUIRED. The `SignIn` interaction event has been specified.
    - **verificationRecords**: REQUIRED.
      - The identifier verification records are created and verified.
      - All necessary MFA verification records are created and verified.
@@ -190,25 +191,25 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
    - **accountId**: NULL. No user account is created yet.
    - **interactionEvent**: OPTIONAL. The interaction event may or may not be specified.
    - **verificationRecords**: OPTIONAL. Verification records may be created but not verified yet.
-   - **profile**: NULL. The user can not provide profile data before they are identified and verified.
+   - **profile**: NULL. The user can not provide profile data until they are identified and verified.
 
 2. Identified: The user has at least one necessary identifier provided that can uniquely identify the user.
 
    The user will be created in the user database once a verified identifier is provided.
 
    - **accountId**: REQUIRED. The new userId of the user for the current interaction.
-   - **interactionEvent**: REQUIRED. Register interaction event has been specified.
+   - **interactionEvent**: REQUIRED. The `Register` interaction event has been specified.
    - **verificationRecords**: OPTIONAL.
      - REQUIRED if the user has provided a verified identifier. The identifier verification records are created and verified.
      - NULL if username is used as the identifier.
    - **profile**: REQUIRED. The user have provided the necessary sign-up identifier.
 
-3. Verified: A `Identified` register interaction status is also `Verified` as the new user does not have any existing MFA settings.
+3. Verified: An `Identified` registration interaction is also considered `Verified` since the new user does not have any existing MFA settings.
 
 4. ProfileFulfilled: The user has provided all the necessary profile data and MFA settings during the interaction.
 
    - **accountId**: REQUIRED. The new userId of the user for the current interaction.
-   - **interactionEvent**: REQUIRED. Register interaction event has been specified.
+   - **interactionEvent**: REQUIRED. The `Register` interaction event has been specified.
    - **verificationRecords**: OPTIONAL.
      - REQUIRED if the user has provided a verified identifier. The identifier verification records are created and verified.
      - REQUIRED Any newly added MFA settings in the profile have corresponding verification records created and verified.
@@ -229,21 +230,21 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
    - **accountId**: NULL. Not available for the forgot password interaction.
    - **interactionEvent**: OPTIONAL. The interaction event may or may not be specified.
    - **verificationRecords**: OPTIONAL. Verification records may be created before the user is identified.
-   - **profile**: NULL. The user can not provide profile data before they are identified and verified.
+   - **profile**: NULL. The user can not provide profile data until they are identified.
 
 2. Identified: The user is identified by at least one verified identifier email or phone.
 
    - **accountId**: REQUIRED. The userId of the user for the current interaction.
-   - **interactionEvent**: REQUIRED. Forgot password interaction event has been specified.
+   - **interactionEvent**: REQUIRED. The `ForgetPassword` interaction event has been specified.
    - **verificationRecords**: REQUIRED. The identifier verification records are created and verified.
-   - **profile**: NULL. The user can not provide profile data before they are verified.
+   - **profile**: NULL. The user has not provided the password yet.
 
 3. ProfileFulfilled: The user has the new password provided.
 
    - **accountId**: REQUIRED. The userId of the user for the current interaction.
-   - **interactionEvent**: REQUIRED. Forgot password interaction event has been specified.
+   - **interactionEvent**: REQUIRED. The `ForgetPassword` interaction event has been specified.
    - **verificationRecords**: REQUIRED. The identifier verification records are created and verified.
-   - **profile**: REQUIRED. The password has been set during the interaction.
+   - **profile**: REQUIRED. The password has been set.
 
 4. Submitted: The user has submitted the interaction to Logto for authentication. The user's password will be updated in the user database. Interaction will be completed.
 
@@ -251,7 +252,7 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
 
 ### 6.1 Compatibility
 
-Unlike the current internal interaction APIs, the new experience APIs are publicly available to the developers, as they can be used to build a customized sign-in experience. This mains any changes to the experience APIs may impact the existing developers who rely on the APIs to build their sign-in experience. We need to ensure backward compatibility and carefully version the experience APIs to avoid breaking changes for the developers.
+Unlike the current internal interaction APIs, the new experience APIs are publicly available to the developers, as they can be used to build a customized sign-in experience. This means any changes to the experience APIs may impact the existing developers who rely on the APIs to build their sign-in experience. We need to ensure backward compatibility and carefully version the experience APIs to avoid breaking changes for the developers.
 
 ### 6.2 Complexity
 
@@ -265,11 +266,12 @@ We will need to keep two sets of APIs in sync to ensure that the experience APIs
 
 ### 6.4 Performance overhead
 
-To maintain interaction status and decouple API logic, multiple API requests are required from the client side. For example, an additional /api/experience/submit request must be called each time to submit and validate interaction requirements, even for a simple username and password sign-in flow. Instead of a single /api/experience/sign-in request, an extra /submit request is necessary. This increases the number of API calls, potentially leading to higher latency and reduced performance.
+To maintain interaction status and decouple API logic, multiple API requests are required from the client side. For example, an additional submit request must be called each time to submit and validate the interaction requirements, even for a simple username and password sign-in flow. Instead of a single sign-in request, an extra submit request is necessary. This increases the number of API calls, potentially leading to higher latency and reduced performance.
 
 ## 7. Rationale and alternatives
 
-Logto provides a variety of authentication and verification methods to meet the diverse needs of developers and end-users. We have been constantly improving the sign-in experience configurations and providing extra customization options for the developers to build a flexible and secure sign-in experience. As the sign-in experience is a critical part of the user authentication process, and it is hard to enumerate all the possible uses cases and customization requirements, we believe that opening up the experience APIs to the developers with a customizable front-end user interface will provide more flexibility and control over the sign-in experience.
+Logto provides a variety of authentication and verification methods to meet the diverse needs of developers and end-users. We have been constantly improving the sign-in experience configurations and providing extra customization options for the developers to build a flexible and secure sign-in experience.
+As the sign-in experience is a critical part of the user authentication process, and it is hard to enumerate all the possible uses cases, we believe that opening up the experience APIs to the developers with a customizable front-end user interface will provide more flexibility and control over the sign-in experience.
 
 ### 7.1 Considerations
 
@@ -291,7 +293,7 @@ The verification and user profile APIs can be extended to support more advanced 
 
 ### 8.2 Simplified experience API calls
 
-Reduce the complexity of the experience API calls. We are considering merging several API calls into a single API call to simplify the user interaction flow. For example, omit the extra `/submit` request for the sign-in experience, consider introducing a `autoSubmit` flag in some of the interaction APIs to automatically submit the interaction once all the requirements are met.
+Reduce the complexity of the experience API calls. We are considering merging several API calls into a single API call to simplify the user interaction flow. For example, omit the extra submit request for the sign-in experience, consider introducing a `autoSubmit` flag in some of the interaction APIs to automatically submit the interaction once all the requirements are met.
 
 ### 8.3 Provide additional custom user profiles in a sign-in experience
 
@@ -303,12 +305,12 @@ Develop a client-side SDK that simplifies the integration of the experience APIs
 
 ### 8.5 Additional password and social/SSO verification APIs
 
-Currently the password verification record was created directly in the sign-in authentication API. We can consider providing additional verification APIs to create and verify the password verification record separately. This will allow developers to customize the password verification process and create a password verification record outside the sign-in experience.
-Currently the social and SSO verification record was created using the social/SSO authentication API. We can consider providing additional verification APIs to create and verify the social/SSO verification record separately. This will allow developers to customize the social/SSO authentication process and create a social/SSO verification record outside the sign-in experience.
+Currently the password verification record was created directly via the sign-in user identification API. We may provide additional verification APIs to create and verify the password verification record separately. This will allow developers to customize the password verification process and create a password verification record outside the sign-in experience.
+Similarly, we can provide additional verification APIs to create and verify the social/SSO verification record separately. This will allow developers to customize the social/SSO authentication process and create a social/SSO verification record outside the sign-in experience as well.
 
 ### 8.6 Open verification APIs
 
-The verification APIs as well as the verification record can be extended to support other verification circumstances outside the sign-in experience. For example, support dynamic MFA verification.
+The verification APIs as well as the verification record can be extended to support other verification circumstances outside the sign-in experience. For example, support dynamic MFA verification and the verification for the user profile updates.
 
 ## Appendix A. Experience API
 
@@ -321,10 +323,10 @@ type Identifier = {
 };
 ```
 
-### 1. Interaction authentication API
+### 1. User identification API
 
-The interaction authentication API is the core set of APIs to identify the user during the sign-in experience.
-A successful interaction authentication will change the interaction status from `Initiated` to `Identified`.
+The user identification API is the core set of APIs to identify the user during the sign-in experience.
+A successful user identification will change the interaction status from `Initiated` to `Identified`.
 
 - **Specify interaction event type**: Define the type of interaction event to be initiated.
 - **Provide necessary identifiers**: The user must provide the necessary identifiers to identify themselves in the interaction.
@@ -343,10 +345,10 @@ A successful interaction authentication will change the interaction status from 
 
   Request body:
 
-  | Field      | Type       | Description              | Required |
-  | ---------- | ---------- | ------------------------ | -------- |
-  | identifier | Identifier | The user's `identifier`. | Yes      |
-  | password   | String     | The user's password.     | Yes      |
+  | Field      | Type       | Description            | Required |
+  | ---------- | ---------- | ---------------------- | -------- |
+  | identifier | Identifier | The user's identifier. | Yes      |
+  | password   | String     | The user's password.   | Yes      |
 
 - `POST /api/experience/auth/sign-in/verification-code`
 
@@ -362,7 +364,7 @@ A successful interaction authentication will change the interaction status from 
 
   | Field          | Type       | Description                                | Required |
   | -------------- | ---------- | ------------------------------------------ | -------- |
-  | identifier     | Identifier | The user's `identifier`.                   | Yes      |
+  | identifier     | Identifier | The user's identifier.                     | Yes      |
   | verificationId | string     | The unique id for the verification record. | No       |
 
 - `POST /api/experience/auth/sign-in/verification-code/verify`
@@ -377,7 +379,7 @@ A successful interaction authentication will change the interaction status from 
 
   | Field          | Type       | Description                                           | Required |
   | -------------- | ---------- | ----------------------------------------------------- | -------- |
-  | identifier     | Identifier | The user's `identifier`.                              | Yes      |
+  | identifier     | Identifier | The user's identifier.                                | Yes      |
   | code           | string     | The verification code to verify the given identifier. | Yes      |
   | verificationId | string     | The unique id for the verification record.            | Yes      |
 
@@ -385,12 +387,12 @@ A successful interaction authentication will change the interaction status from 
 
 - `POST /api/experience/auth/register`
 
-  The `register` API is used to create a new account in Logto. The user must provide at least one `identifier` to uniquely identify themselves in Logto.
+  The register API is used to create a new account in Logto. The user must provide at least one `identifier` to uniquely identify themselves in Logto.
 
   - A `Register` interaction event will be initiated for the interaction.
-  - A password must be provided if the user is creating a new account with a `username` identifier.
+  - A password must be provided if the user is creating a new account using a `username` as the identifier.
   - A `verificationId` pointing to a verified verification record should be provided if a `email` or `phone` identifier is used to identify the user.
-  - If the user provides a `email` or `phone` identifier without a verificationId, A new verification code record will be created, and a code will be sent to the given `identifier`.
+  - If the user provides a `email` or `phone` identifier without a `verificationId`, A new verification code record will be created, and a code will be sent to the given `identifier`.
   - A new user account will be created in Logto if the required identifier are provided and verified.
   - The `accountId` will be set to the new user's `userId` if the user is created successfully.
   - The interaction status will be changed to `Verified` if the user is created successfully. As the new user does not have any existing MFA settings.
@@ -399,7 +401,7 @@ A successful interaction authentication will change the interaction status from 
 
   | Field          | Type       | Description                                | Required |
   | -------------- | ---------- | ------------------------------------------ | -------- |
-  | identifier     | Identifier | The user's `identifier`.                   | Yes      |
+  | identifier     | Identifier | The user's identifier.                     | Yes      |
   | password       | string     | The user's password.                       | No       |
   | verificationId | string     | The unique id for the verification record. | No       |
 
@@ -416,7 +418,7 @@ A successful interaction authentication will change the interaction status from 
 
   | Field          | Type       | Description                                           | Required |
   | -------------- | ---------- | ----------------------------------------------------- | -------- |
-  | identifier     | Identifier | The user's `identifier`.                              | Yes      |
+  | identifier     | Identifier | The user's identifier.                                | Yes      |
   | code           | string     | The verification code to verify the given identifier. | Yes      |
   | verificationId | string     | The unique id for the verification record.            | Yes      |
 
@@ -424,7 +426,7 @@ A successful interaction authentication will change the interaction status from 
 
 - `POST /api/experience/forgot-password`
 
-  The `forgot-password` API is used to initiate an account recovery process in Logto. The user must provide a valid `identifier` to start the account recovery process.
+  The forgot password API is used to initiate an account recovery process in Logto. The user must provide a valid `identifier` to start the account recovery process.
 
   - A `ForgotPassword` interaction event will be initiated for the interaction.
   - Only `email` and `phone` identifiers can be used to identify the user for the forgot password interaction in Logto.
@@ -436,7 +438,7 @@ A successful interaction authentication will change the interaction status from 
 
   | Field          | Type       | Description                                | Required |
   | -------------- | ---------- | ------------------------------------------ | -------- |
-  | identifier     | Identifier | The user's `identifier`.                   | Yes      |
+  | identifier     | Identifier | The user's identifier.                     | Yes      |
   | verificationId | string     | The unique id for the verification record. | No       |
 
 - `POST /api/experience/forgot-password/verification-code/verify`
@@ -450,7 +452,7 @@ A successful interaction authentication will change the interaction status from 
 
   | Field          | Type       | Description                                           | Required |
   | -------------- | ---------- | ----------------------------------------------------- | -------- |
-  | identifier     | Identifier | The user's `identifier`.                              | Yes      |
+  | identifier     | Identifier | The user's identifier.                                | Yes      |
   | code           | string     | The verification code to verify the given identifier. | Yes      |
   | verificationId | string     | The unique id for the verification record.            | Yes      |
 
@@ -504,7 +506,7 @@ A successful social/SSO authentication will change the interaction status from `
 The verification API is a set of APIs used to create and verify a verification record for the user during the sign-in experience.
 
 - Verification API can be used at any time to create and verify the necessary verification records for the user during the interaction.
-- Once the verification record is created, a unique `verification id` will be generated for tracking the verification process.
+- Once the verification record is created, a unique `verificationId` will be generated for tracking the verification process.
 
 #### Verification code
 
@@ -520,7 +522,7 @@ The verification API is a set of APIs used to create and verify a verification r
 
   | Field            | Type             | Description                                                     | Required |
   | ---------------- | ---------------- | --------------------------------------------------------------- | -------- |
-  | identifier       | Identifier       | The user's `identifier`.                                        | Yes      |
+  | identifier       | Identifier       | The user's identifier.                                          | Yes      |
   | interactionEvent | InteractionEvent | The `interaction event` that triggers the verification process. | Yes      |
 
 - `POST /api/experience/verification/verification-code/verify`
@@ -533,7 +535,7 @@ The verification API is a set of APIs used to create and verify a verification r
 
   | Field          | Type       | Description                                           | Required |
   | -------------- | ---------- | ----------------------------------------------------- | -------- |
-  | identifier     | Identifier | The user's `identifier`.                              | Yes      |
+  | identifier     | Identifier | The user's identifier.                                | Yes      |
   | code           | string     | The verification code to verify the given identifier. | Yes      |
   | verificationId | string     | The unique id for the verification record.            | Yes      |
 
@@ -624,7 +626,7 @@ The profile fulfillment API is used to provide additional profile data and MFA s
 
 - `PATCH /api/experience/profile`
 
-  The `profile` API is used to update the user's profile information in Logto.
+  The profile API is used to update the user's profile information in Logto.
 
   - A verification record is required to verify the given identifier if the `email`, or `phone` is provided in the profile data.
 
@@ -665,5 +667,3 @@ The profile fulfillment API is used to provide additional profile data and MFA s
   - **verificationRecordStatus**: The verification record list created during the current interaction. Only verification type, status, and verificationId are returned.
   - **profileKeys**: The user provided profile keys in the current interaction that will be updated in the user database.
   - **status**: The current status of the interaction.
-
-## Appendix B. Examples
