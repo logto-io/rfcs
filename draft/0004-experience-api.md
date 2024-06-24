@@ -455,7 +455,7 @@ A successful user identification will change the interaction status from `Initia
 
 ### 2. Social/SSO authentication APIs
 
-The social/SSO authentication API is used to authenticate the user with a third-party social or enterprise identity provider.
+The social/SSO authentication APIs (APIs start with `/api/experience/auth/{social|sso}`) are used to authenticate the user with a third-party social or enterprise identity provider.
 A successful social/SSO authentication will change the interaction status from `Initiated` to `Identified`.
 
 - `POST /api/experience/auth/{social|sso}/:connectorId/authorization-url`
