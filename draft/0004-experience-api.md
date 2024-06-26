@@ -327,25 +327,6 @@ The Experience API are a set of APIs that allow end-users to interact with the L
 
 The verification APIs (APIs start with `/api/experience/verification`) are a set of APIs used to create and verify a verification record for the user during the sign-in experience.
 
-#### New password
-
-- `POST /api/experience/verification/new-password`
-
-  Create a new password verification record for the user to set up a new password during the sign-in experience.
-
-  - A new password verification record will be created in the interaction.
-  - The new password verification will verify the password against the password policy settings.
-  - For existing users profile fulfillment, the old password will be verified against the new password to prevent reuse.
-  - For new identity registrations, a related identifier must be provided to verify the password-based identity's availability against the existing user database.
-  - For new identity registrations, `email` or `phone` identifier must be verified before the password verification. A `verificationId` is required to verify the identifier.`
-
-  Request body:
-
-  | Field      | Type       | Description            | Required |
-  | ---------- | ---------- | ---------------------- | -------- |
-  | password   | string     | The user's password.   | Yes      |
-  | identifier | Identifier | The user's identifier. | NO       |
-
 #### Password
 
 - `POST /api/experience/verification/password`
@@ -364,7 +345,7 @@ The verification APIs (APIs start with `/api/experience/verification`) are a set
 
 #### Social/SSO
 
-- `POST /api/experience/auth/{social|sso}/:connectorId/authorization-url`
+- `POST /api/experience/verification/{social|sso}/:connectorId/authorization-url`
 
   Generate an authorization URL for the user to authenticate with a third-party social or enterprise identity provider.
 
@@ -372,7 +353,7 @@ The verification APIs (APIs start with `/api/experience/verification`) are a set
   - The unique `verificationId` will be generated for the verification record.
   - A `redirectUrl` will be generated for the user to authenticate with the social/SSO provider.
 
-- `POST /api/experience/auth/{social|sso}/:connectorId/authenticate`
+- `POST /api/experience/verification/{social|sso}/:connectorId/authenticate`
 
   Authenticate the user with the social/SSO provider and identify the user with the authenticated social/SSO identity.
 
@@ -486,6 +467,25 @@ The verification APIs (APIs start with `/api/experience/verification`) are a set
   | ---------- | ------ | --------------------- | -------- |
   | backupCode | string | The backup code value | Yes      |
 
+#### New password
+
+- `POST /api/experience/verification/new-password`
+
+  Create a new password verification record for the user to set up a new password during the sign-in experience.
+
+  - A new password verification record will be created in the interaction.
+  - The new password verification will verify the password against the password policy settings.
+  - For existing users profile fulfillment, the old password will be verified against the new password to prevent reuse.
+  - For new identity registrations, a related identifier must be provided to verify the password-based identity's availability against the existing user database.
+  - For new identity registrations, `email` or `phone` identifier must be verified before the password verification. A `verificationId` is required to verify the identifier.`
+
+  Request body:
+
+  | Field      | Type       | Description            | Required |
+  | ---------- | ---------- | ---------------------- | -------- |
+  | password   | string     | The user's password.   | Yes      |
+  | identifier | Identifier | The user's identifier. | NO       |
+
 ### 2. Identification API
 
 `POST /api/experience/identification`
@@ -494,10 +494,11 @@ The identification API is the core interaction API to specify the interaction ev
 
 Request body:
 
-| Field            | Type             | Description                                                       | Required |
-| ---------------- | ---------------- | ----------------------------------------------------------------- | -------- |
-| interactionEvent | InteractionEvent | The interaction event for the current interaction.                | Yes      |
-| verificationId   | string           | The verification record id that can be used to identify the user. | Yes      |
+| Field              | Type             | Description                                                                                                    | Required |
+| ------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------- | -------- |
+| interactionEvent   | InteractionEvent | The interaction event for the current interaction.                                                             | Yes      |
+| verificationId     | string           | The verification record id that can be used to identify the user.                                              | Yes      |
+| linkSocialIdentity | boolean          | Link the new social identity to a existing user account with same email. Only used in the social sign-in flow. | No       |
 
 #### Sign in
 
