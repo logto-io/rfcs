@@ -40,11 +40,11 @@ Currently, our interaction APIs in Logto are neither well-documented nor publicl
 The user sign-in experience in Logto may include the following key steps:
 
 1. **Sign-in experience initiation**: When the client application sends an authentication request to Logto, the user is redirected to the experience app, initiating a new interaction for the authentication and authorization process.
-2. **Identification**: The user must provide an verified identifier to Logto, such as a username, email address, phone number, social identity, or SSO identity. This identifier is used to identify the user during the interaction.
-3. **Verification**: The process to verify a user's identity by requesting additional security information. This can be a one-time code, or a passkey, etc. Upon the security settings, multiple verification methods can be used.
+2. **Identification**: The user must provide a verified identifier to Logto, such as a username, email address, phone number, social identity, or SSO identity. This identifier is used to identify the user during the interaction.
+3. **Verification**: The process to verify a user's identity by requesting additional security information. This can be a one-time code, or a passkey, etc. Depending on the security settings, multiple verification methods can be used.
 4. **Profile fulfillment**: During the interaction, the user may be prompted to complete their profile and / or verification settings. This can be necessary for user registration or mandatory updates for existing users.
 5. **Authentication**: Once the user has completed all the necessary steps, they can submit the interaction to get authenticated by Logto. All the user's profile and MFA settings updates will be saved to the user database.
-6. **Consent**: Users may need to grant consent for specific actions upon the requested authorization details. This could involve sharing personal information, allowing access for their organization, or granting permissions to specific resources. For first-party applications, consent is implicit and handled automatically by Logto once user get authenticated. For third-party applications, consent is explicit, and the user will be prompted to grant the necessary permissions after a successful interaction submission.
+6. **Consent**: Users may need to grant consent for specific actions upon the requested authorization details. This could involve sharing personal information, allowing access for their organization, or granting permissions to specific resources. For first-party applications, consent is implicit and handled automatically by Logto once the user gets authenticated. For third-party applications, consent is explicit, and the user will be prompted to grant the necessary permissions after a successful interaction submission.
 7. **Authorization**: The final step in the sign-in experience. Once the user has been authenticated and consented to the necessary actions, they will be redirected back to the client application with granted authorization.
 
 ## 4. Definitions
@@ -55,9 +55,9 @@ Interaction event represent the user's current interaction purpose with Logto. L
 
 The following are the types of interaction event supported by Logto:
 
-- **Register**: A new user signs up for a account in Logto.
+- **Register**: A new user signs up for an account in Logto.
 - **SignIn**: An existing user signs in to their account in Logto.
-- **ForgotPassword**: A user forgets the password and initiates an account recovery process to reset password.
+- **ForgotPassword**: A user forgets the password and initiates an account recovery process to reset their password.
 
 ### 4.2 Identifiers
 
@@ -73,22 +73,34 @@ The following are the types of identifiers supported by Logto that can be used t
 
 A verification record contains the necessary security information to verify a user's identity. One or more verification records can be created and verified via Experience API during the sign-in process.
 
-#### 4.3.1 Primary verification
+#### 4.3.1 Identifier verification
 
-Primary verification can be used to verify the user's identity with a given identifier. A successful primary verification will update the [interaction status](#52-interaction-status) from `Initiated` to `Identified`.
+Identifier verification can be used to verify the user's identity with a given identifier. A successful identifier verification will update the [interaction status](#52-interaction-status) from `Initiated` to `Identified`.
 
 - **Password**: The user's password, which is the most common method for verifying identity. It can be used to verify the user's `username`, `email`, or `phone` identifier.
 - **Verification code**: A one-time code sent to the user's email or phone number for identifier verification with a 10-minute expiration time. It can be used to verify the user's `email` or `phone` identifier.
 - **Social identity**: An authenticated social identity used to directly identify and verify a user.
 - **SSO identity**: An authenticated SSO identity used to directly identify and verify a user.
 
-#### 4.3.2 Multi-factor authentication(MFA) verification
+#### 4.3.2 Multi-factor authentication (MFA) verification
 
-MFA is a security process that requires more than one verification factor to confirm a user's identity. It can be used as an additional security check during user interaction. Developers can enable MFA using Logto's sign-in experience settings. Once enabled, users will be prompted to provide additional MFA verification records during the interaction. The following are the MFA verification record types supported by Logto:
+MFA is a security process that requires more than one verification factor to confirm a user's identity. It can be used as an additional security check during user interaction.
+
+Developers can enable MFA using Logto's sign-in experience settings. Once enabled, users will be prompted to provide additional MFA verification records during the interaction. MFA verifications can only be created and verified after the user is identified.
+
+The following are the MFA verification record types supported by Logto:
 
 - **TOTP**: A time-based one-time code generated by a TOTP app for identity verification.
 - **WebAuthn**: A webAuthn (passkey) credential used to verify a user's identity.
 - **Backup code**: A set of backup codes used to verify a user's identity when other MFA verification methods are unavailable.
+
+#### 4.3.3 New profile verification
+
+For certain sensitive profile data, such as a new password or a verified email that can be used to identify the user, a verification record is required to ensure the ownership and validity of the data. Logto supports the following types of new profile data verification records:
+
+- **New password**: This verification record is used to set up a new password for the user. It checks the new password against the password policy settings and, for existing users, against the old password to prevent reuse. For new identity registrations, a related identifier must be provided to verify the password-based identity availability against the existing user database.
+- **TOTP secret**: This verification record is used to set up a new TOTP MFA method for the user. It verifies the TOTP secret and generates a new TOTP code for the user to verify the TOTP MFA method.
+- **WebAuthn registration**: This verification record is used to set up a new WebAuthn MFA method for the user. It generates a new WebAuthn registration options object for the user to verify the WebAuthn MFA method.
 
 ### 4.4 User profile
 
@@ -103,11 +115,11 @@ Developers can use Logto sign-in experience settings to define the required prof
 
 #### 4.4.3 Password
 
-The user's password, that can be used as a primary verification method to verify the user's identity during the interaction. The password can be set, updated, based on different interaction events:
+The user's password can be used as a primary verification method to verify the user's identity during the interaction. The password can be set, updated, based on different interaction events:
 
-- The `password` can be set during the `Register` interaction event.
-- The `password` can be set and updated during the `ForgotPassword` interaction event.
-- The `password` can be set during the `SignIn` interaction event only if the user has not set a password before.
+- The `password` can be set during a register interaction event.
+- The `password` can be set and updated during a forgot password interaction event.
+- The `password` can be set during the sign-in interaction event only if the user has not set a password before.
 
 #### 4.4.3 MFA settings
 
@@ -115,10 +127,8 @@ In order to meet the MFA requirement, the user must provide necessary MFA settin
 
 - **TOTP secret**: A TOTP secret used to generate time-based one-time codes for MFA verification. A TOTP code verification record is required to verify the TOTP secret.
 - **WebAuthn registration**: A WebAuthn credential used to verify a user's identity. A `WebAuthn` verification record is required to verify the WebAuthn registration.
-
-#### 4.4.3 Backup codes
-
-A set of Logto generated one-time backup codes that can be used to verify a user's identity when other MFA verification methods are unavailable. The backup codes can be used as an alternative MFA verification method during the interaction.
+- **Backup codes**: A set of Logto generated one-time backup codes that can be used to verify a user's identity when other MFA verification methods are unavailable. The backup codes can be used as an alternative MFA verification method during the interaction.
+- **skipMFA**: A flag to skip the MFA setup process if the MFA settings are optional in the sign-in experience settings.
 
 ## 5. Interaction
 
@@ -138,7 +148,7 @@ In a sign-in experience, the user's interaction progress will be tracked based o
 Here are the interaction statuses defined in Logto:
 
 - **Initiated**: The interaction is initiated by the user.
-- **Identified**: The user is identified by a verified identifier. Once the user is identified, a unique `userId` will be set in the interaction. The identified status can not be unset once the user is successfully identified in the interaction.
+- **Identified**: The user is identified by a verified identifier. Once the user is identified, a unique `userId` will be set in the interaction. The identified status cannot be unset once the user is successfully identified in the interaction.
 - **Verified**: The user is verified by all the necessary verification records, including the MFA. It is computed based on the verified `verificationRecords` in the interaction and the sign-in experience settings. The interaction will be considered as `Verified` only if the user is identified and all the necessary verification records are verified. Any newly added verification requirements in the sign-in experience settings will revert the status back to `Identified` until the new requirements are met.
 - **Profile fulfilled**: The user has provided all the necessary profile data and MFA settings. It is computed based on the `profile` in the interaction and the sign-in experience settings. The interaction is considered as `Profile fulfilled` only if the user is verified and all the necessary profile data and MFA settings are provided. Any newly added profile requirements in the sign-in experience settings will revert the status back to `Verified` until the new requirements are met.
 
@@ -151,7 +161,7 @@ The sign-in interaction may vary based on the sign-in experience settings. Here'
    - `userId`: NULL. The user has not been identified yet.
    - `interactionEvent`: OPTIONAL. The interaction event may or may not be specified.
    - `verificationRecords`: OPTIONAL. Verification records may be created but not verified yet.
-   - `profile`: NULL. The user can not provide profile data until they are identified and verified.
+   - `profile`: NULL. The user cannot provide profile data until they are identified and verified.
 
 2. Identified: The user is identified by at least one verified identifier.
 
@@ -159,7 +169,7 @@ The sign-in interaction may vary based on the sign-in experience settings. Here'
    - `interactionEvent`: REQUIRED. `SignIn` interaction event has been specified.
    - `verificationRecords`: REQUIRED.
      - The identifier verification records are created and verified.
-   - `profile`: NULL. The user can not provide profile data until they are verified.
+   - `profile`: NULL. The user cannot provide profile data until they are verified.
 
 3. Verified: The user is verified by all the necessary verification records, including the MFA.
 
@@ -192,7 +202,7 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
    - `userId`: NULL. No user account is created yet.
    - `interactionEvent`: OPTIONAL. The interaction event may or may not be specified.
    - `verificationRecords`: OPTIONAL. Verification records may be created but not verified yet.
-   - `profile`: NULL. The user can not provide profile data until they are identified and verified.
+   - `profile`: NULL. The user cannot provide profile data until they are identified and verified.
 
 2. Identified: The user has at least one necessary identifier provided that can uniquely identify the user.
 
@@ -205,7 +215,7 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
      - NULL if username is used as the identifier.
    - `profile`: REQUIRED. The user have provided the necessary sign-up identifier.
 
-3. Verified: An `Identified` registration interaction is also considered `Verified` since the new user does not have any existing MFA settings.
+3. Verified: An `Identified` registration interaction is also considered `Verified` as the new user does not have any existing MFA settings.
 
 4. Profile fulfilled: The user has provided all the necessary profile data and MFA settings during the interaction.
 
@@ -231,19 +241,19 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
    - `userId`: NULL. Not available for the forgot password interaction.
    - `interactionEvent`: OPTIONAL. The interaction event may or may not be specified.
    - `verificationRecords`: OPTIONAL. Verification records may be created before the user is identified.
-   - `profile`: NULL. The user can not provide profile data until they are identified.
+   - `profile`: NULL. The user cannot provide profile data until they are identified.
 
 2. Identified: The user is identified by at least one verified identifier email or phone.
 
    - `userId`: REQUIRED. The userId of the user for the current interaction.
-   - `interactionEvent`: REQUIRED. The `ForgetPassword` interaction event has been specified.
+   - `interactionEvent`: REQUIRED. The `ForgotPassword` interaction event has been specified.
    - `verificationRecords`: REQUIRED. The identifier verification records are created and verified.
    - `profile`: NULL. The user has not provided the password yet.
 
 3. Profile fulfilled: The user has the new password provided.
 
    - `userId`: REQUIRED. The userId of the user for the current interaction.
-   - `interactionEvent`: REQUIRED. The `ForgetPassword` interaction event has been specified.
+   - `interactionEvent`: REQUIRED. The `ForgotPassword` interaction event has been specified.
    - `verificationRecords`: REQUIRED. The identifier verification records are created and verified.
    - `profile`: REQUIRED. The password has been set.
 
@@ -291,219 +301,88 @@ Moreover, continuing to use our existing APIs and interaction design will likely
 
 ### 8.1.User profile management
 
-The verification and user profile APIs can be extended to support more advanced user profile management features, outside the sign-in experience. For example, users can update their profile data, manage their MFA settings, and view their interaction history using the experience APIs through a dedicated user profile management interface.
+The verification and user profile APIs can be extended to support more advanced user profile management features, outside the sign-in experience. For example, users can update their profile data, manage their MFA settings, and view their interaction history using the Experience APIs through a dedicated user profile management interface.
 
 ### 8.2 Simplified API calls
 
-Reduce the complexity of the API calls. We are considering merging several API calls into a single API call to simplify the user interaction flow. For example, omit the extra submit request for the sign-in experience, consider introducing a `autoSubmit` flag in some of the interaction APIs to automatically submit the interaction once all the requirements are met.
+Reduce the complexity of the API calls. We are considering merging several API calls into a single API call to simplify the user interaction flow. For example, omit the extra submit request for the sign-in experience, consider introducing an `autoSubmit` flag in some of the interaction APIs to automatically submit the interaction once all the requirements are met.
 
 ### 8.3 Support custom user profile
 
-The user profile data can be extended to support custom user profile fields in the sign-in experience. Developers can define and set required custom profile fields for the user during the interaction. This will allow developers to collect additional user data and customize the user profile based on their specific use cases.
+The user profile data can be extended to support custom user profile fields during the sign-in experience. Developers can define and set required custom profile fields for the user during the interaction. This will allow developers to collect additional user data and customize the user profile based on their specific use cases.
 
 ### 8.4 Experience API SDK
 
-Develop a client-side SDK that simplifies the integration of the Experience API into the front-end application. The SDK can provide a set of pre-built components and functions that handle the interaction flow, user profile management, and MFA settings. This will help developers quickly integrate the Experience API into their applications and build a customized sign-in experience with minimal effort.
+Developing a client-side SDK that simplifies the integration of the Experience API into the front-end application. The SDK can provide a set of pre-built components and functions that handle the interaction flow, user profile management, and MFA settings. This will help developers quickly integrate the Experience API into their applications and build a customized sign-in experience with minimal effort.
 
 ### 8.5 Standalone verification APIs
 
-Currently, a verification record is created directly via the Experience API. We may provide standalone verification APIs to create and verify these verification records without an interaction context. This will allow developers to customize the verification process and use it in a separate flow, e.g., building a GitHub-like sudo mode.
+Currently, a verification record is created directly via the Experience API. We may provide standalone verification APIs to create and verify these verification records without an interaction context. This will allow developers to customize the verification process and use it in a separate flow, e.g., building a GitHub-like `sudo` mode.
 
 ## Appendix A. Experience API
 
-The experience API are a set of APIs that allow end-users to interact with the Logto to complete the user sign-in experience.
+The Experience API are a set of APIs that allow end-users to interact with the Logto to complete the user sign-in experience.
 
-```ts
-type Identifier = {
-  type: "username" | "email" | "phone";
-  value: string;
-};
-```
+### 1. Verification APIs
 
-### 1. User identification APIs
+The verification APIs (APIs start with `/api/experience/verification`) are a set of APIs used to create and verify a verification record for the user during the sign-in experience.
 
-The user identification APIs (APIs start with `/api/experience/auth`) is the core set of APIs to identify the user during the sign-in experience.
-A successful user identification will change the interaction status from `Initiated` to `Identified`.
+#### New password
 
-- **Specify interaction event type**: Define the type of interaction event to be initiated.
-- **Provide necessary identifiers**: The user must provide the necessary identifiers to identify themselves in the interaction.
-- **Provide necessary verification records**: The user must provide the necessary verification records to verify their identity in the interaction.
+- `POST /api/experience/verification/new-password`
 
-#### Sign in
+  Create a new password verification record for the user to set up a new password during the sign-in experience.
 
-- `POST /api/experience/auth/sign-in/password`
+  - A new password verification record will be created in the interaction.
+  - The new password verification will verify the password against the password policy settings.
+  - For existing users profile fulfillment, the old password will be verified against the new password to prevent reuse.
+  - For new identity registrations, a related identifier must be provided to verify the password-based identity's availability against the existing user database.
+  - For new identity registrations, `email` or `phone` identifier must be verified before the password verification. A `verificationId` is required to verify the identifier.`
 
-  Identify the user with the given `identifier` and a password verification record.
+  Request body:
 
-  - A `SignIn` interaction event will be initiated for the interaction.
-  - A password verification record will be created in the interaction.
-  - The `accountId` will be set to the user's `userId` if the user is identified successfully.
-  - The interaction status will be changed to `Identified` if the user is identified successfully.
+  | Field      | Type       | Description            | Required |
+  | ---------- | ---------- | ---------------------- | -------- |
+  | password   | string     | The user's password.   | Yes      |
+  | identifier | Identifier | The user's identifier. | NO       |
+
+#### Password
+
+- `POST /api/experience/verification/password`
+
+  Create a new password verification record for the user to verify the password during the sign-in experience.
+
+  - A new password verification record will be created in the interaction.
+  - The password verification record will be verified if the password is correct.
 
   Request body:
 
   | Field      | Type       | Description            | Required |
   | ---------- | ---------- | ---------------------- | -------- |
   | identifier | Identifier | The user's identifier. | Yes      |
-  | password   | String     | The user's password.   | Yes      |
+  | password   | string     | The user's password.   | Yes      |
 
-- `POST /api/experience/auth/sign-in/verification-code`
-
-  Identify the user with the given `identifier` and a verification record.
-
-  - A `SignIn` interaction event will be initiated for the interaction.
-  - A `verificationId` pointing to a verified verification record should be provided if a `email` or `phone` identifier is used to identify the user.
-  - If no `verificationId` is provided, a new verification code record will be created in the interaction, and a code will be sent to the given `identifier`.
-  - The `accountId` will be set to the user's `userId` if a verified verification record is found and the user is identified successfully.
-  - The interaction status will be changed to `Identified` if a verified verification record is found and the user is identified successfully.
-
-  Request body:
-
-  | Field          | Type       | Description                                | Required |
-  | -------------- | ---------- | ------------------------------------------ | -------- |
-  | identifier     | Identifier | The user's identifier.                     | Yes      |
-  | verificationId | string     | The unique id for the verification record. | No       |
-
-- `PATCH /api/experience/auth/sign-in/verification-code/verify`
-
-  The concurrent API to verify the given `identifier` with the provided verification code.
-
-  - The verification record will be verified in the interaction.
-  - The `accountId` will be set to the user's `userId` if the verification is successful.
-  - The interaction status will be changed to `Identified` if the verification is successful.
-
-  Request body:
-
-  | Field          | Type       | Description                                           | Required |
-  | -------------- | ---------- | ----------------------------------------------------- | -------- |
-  | identifier     | Identifier | The user's identifier.                                | Yes      |
-  | code           | string     | The verification code to verify the given identifier. | Yes      |
-  | verificationId | string     | The unique id for the verification record.            | Yes      |
-
-#### Register
-
-- `POST /api/experience/auth/register`
-
-  The register API is used to create a new account in Logto. The user must provide at least one `identifier` to uniquely identify themselves in Logto.
-
-  - A `Register` interaction event will be initiated for the interaction.
-  - A password must be provided if the user is creating a new account using a `username` as the identifier.
-  - A `verificationId` pointing to a verified verification record should be provided if a `email` or `phone` identifier is used to identify the user.
-  - If the user provides a `email` or `phone` identifier without a `verificationId`, A new verification code record will be created, and a code will be sent to the given `identifier`.
-  - A new user account will be created in Logto if the required identifier are provided and verified.
-  - The `accountId` will be set to the new user's `userId` if the user is created successfully.
-  - The interaction status will be changed to `Verified` if the user is created successfully. As the new user does not have any existing MFA settings.
-
-  Request body:
-
-  | Field          | Type       | Description                                | Required |
-  | -------------- | ---------- | ------------------------------------------ | -------- |
-  | identifier     | Identifier | The user's identifier.                     | Yes      |
-  | password       | string     | The user's password.                       | No       |
-  | verificationId | string     | The unique id for the verification record. | No       |
-
-- `POST /api/experience/auth/register/verification-code/verify`
-
-  The concurrent API to verify the given `identifier` with the provided verification code during the register interaction.
-
-  - The verification record will be verified in the interaction.
-  - A new user account will be created in Logto if the required identifier are provided and verified.
-  - The `accountId` will be set to the new user's `userId` if the user is created successfully.
-  - The interaction status will be changed to `Verified` if the user is created successfully. As the new user does not have any existing MFA settings.
-
-  Request body:
-
-  | Field          | Type       | Description                                           | Required |
-  | -------------- | ---------- | ----------------------------------------------------- | -------- |
-  | identifier     | Identifier | The user's identifier.                                | Yes      |
-  | code           | string     | The verification code to verify the given identifier. | Yes      |
-  | verificationId | string     | The unique id for the verification record.            | Yes      |
-
-#### Forgot password
-
-- `POST /api/experience/auth/reset`
-
-  The forgot password API is used to initiate an account recovery process in Logto. The user must provide a valid `identifier` to start the account recovery process.
-
-  - A `ForgotPassword` interaction event will be initiated for the interaction.
-  - Only `email` and `phone` identifiers can be used to identify the user for the forgot password interaction in Logto.
-  - A `verificationId` pointing to a verified verification record should be provided.
-  - If no `verificationId` is provided,, a new verification code record will be created, and a code will be sent for the given `identifier`.
-  - The interaction status will be changed to `Identified` if the user is identified successfully.
-
-  Request body:
-
-  | Field          | Type       | Description                                | Required |
-  | -------------- | ---------- | ------------------------------------------ | -------- |
-  | identifier     | Identifier | The user's identifier.                     | Yes      |
-  | verificationId | string     | The unique id for the verification record. | No       |
-
-- `POST /api/experience/auth/reset/verification-code/verify`
-
-  The concurrent API to verify the given `identifier` with the provided verification code during the forgot password interaction.
-
-  - The verification record will be verified in the interaction.
-  - The interaction status will be changed to `Identified` if the verification is successful.
-
-  Request body:
-
-  | Field          | Type       | Description                                           | Required |
-  | -------------- | ---------- | ----------------------------------------------------- | -------- |
-  | identifier     | Identifier | The user's identifier.                                | Yes      |
-  | code           | string     | The verification code to verify the given identifier. | Yes      |
-  | verificationId | string     | The unique id for the verification record.            | Yes      |
-
-### 2. Social/SSO authentication APIs
-
-The social/SSO authentication APIs (APIs start with `/api/experience/auth/{social|sso}`) are used to authenticate the user with a third-party social or enterprise identity provider.
-A successful social/SSO authentication will change the interaction status from `Initiated` to `Identified`.
+#### Social/SSO
 
 - `POST /api/experience/auth/{social|sso}/:connectorId/authorization-url`
 
   Generate an authorization URL for the user to authenticate with a third-party social or enterprise identity provider.
 
-  - A `SignIn` interaction event will be initiated for the interaction.
   - A social/SSO verification record will be created in the interaction.
+  - The unique `verificationId` will be generated for the verification record.
+  - A `redirectUrl` will be generated for the user to authenticate with the social/SSO provider.
 
 - `POST /api/experience/auth/{social|sso}/:connectorId/authenticate`
 
   Authenticate the user with the social/SSO provider and identify the user with the authenticated social/SSO identity.
 
   - The social/SSO verification record will be verified in the interaction.
-  - The `accountId` will be set to the user's `userId` if the verification is successful and a user is identified.
-  - The interaction status will be changed to `Identified` if the verification is successful and a user is identified.
-  - For SSO authentication, if the SSO identity is not found in Logto database, but the verified email is found, the SSO identity will be added to the user profile in the interaction and the user will be identified.
 
   Request body:
 
-  | Field | Type                   | Description                                |
-  | ----- | ---------------------- | ------------------------------------------ |
-  | data  | Record<string, string> | callback data from the social/SSO provider |
-
-- `POST /api/experience/auth/{social|sso}/:connectorId/register`
-
-  The concurrent API to register a new user with the provided social/SSO identity. If the social/SSO identity is not found in Logto.
-
-  - The interaction event will be changed to `Register`.
-  - A new user account will be created in Logto with the provided social/SSO identity.
-  - The `accountId` will be set to the new user's `userId` if the user is created successfully.
-  - The interaction status will be changed to `Verified` if the user is created successfully. As the new user does not have any existing MFA settings.
-
-- `POST /api/experience/auth/social/:connectorId/link`
-
-  The concurrent API to link the existing user account with the provided social identity.
-  Unlike SSO authentication, if the social identity is not found in Logto, but the verified email is found, the social identity need to be manually linked to the existing account via this API.
-
-  - The `accountId` will be set to the user's `userId` identified by the verified email.
-  - The interaction status will be changed to `Identified` if the verification is successful and a user is identified.
-  - The social identity will be added to the user profile in the interaction.
-
-### 3. Verification APIs
-
-The verification APIs (APIs start with `/api/experience/verification`) is a set of APIs used to create and verify a verification record for the user during the sign-in experience.
-
-- Verification API can be used at any time to create and verify the necessary verification records for the user during the interaction.
-- Once the verification record is created, a unique `verificationId` will be generated for tracking the verification process.
+  | Field | Type                   | Description                                | Required |
+  | ----- | ---------------------- | ------------------------------------------ | -------- |
+  | data  | Record<string, string> | Callback data from the social/SSO provider | true     |
 
 #### Verification code
 
@@ -540,7 +419,7 @@ The verification APIs (APIs start with `/api/experience/verification`) is a set 
 
 - `POST /api/experience/verification/totp/secret`
 
-  Create a new TOTP secret for the user to set up the TOTP MFA method.
+  Create a new TOTP secret for the user to set up the TOTP MFA method. Required for the first time registration of the TOTP MFA method.
 
   - A new TOTP secret will be generated for the user.
   - A new TOTP verification record will be created in the interaction.
@@ -552,7 +431,7 @@ The verification APIs (APIs start with `/api/experience/verification`) is a set 
   - For the first time verification of a new added TOTP secret, the `verificationId` is required.
   - For the first time verification of a new added TOTP secret, the verification record will be verified.
   - For the first time verification of a new added TOTP secret, the new TOTP secret will be inserted into the user profile in the interaction as a new MFA setting.
-  - For the existing TOTP secret verification, the `verificationId` empty.
+  - For the existing TOTP secret verification, the `verificationId`is empty.
   - For the existing TOTP secret verification, a verified TOTP verification record will be created.
 
   Request body:
@@ -566,7 +445,7 @@ The verification APIs (APIs start with `/api/experience/verification`) is a set 
 
 - `POST /api/experience/verification/web-authn/registration`
 
-  Create a new WebAuthn registration options object for the user to verify and set up the WebAuthn MFA method.
+  Create a new WebAuthn registration options object for the user to set up the WebAuthn MFA method. Required for the first time registration of the WebAuthn MFA method.
 
   - A new WebAuthn registration options object will be generated for the user.
   - A new WebAuthn verification record will be created in the interaction with the generated WebAuthn registration options.
@@ -595,13 +474,6 @@ The verification APIs (APIs start with `/api/experience/verification`) is a set 
 
 #### Backup codes
 
-- `POST /api/experience/verification/backup-codes/generate`
-
-  Generate a new set of backup codes for the user to set up the Backup Code MFA method.
-
-  - A new set of backup codes will be generated for the user.
-  - The backup codes will be inserted into the user profile in the interaction as a new MFA setting.
-
 - `PUT /api/experience/verification/backup-code/verify`
 
   Verify the Backup Code MFA method with the provided backup code.
@@ -610,13 +482,48 @@ The verification APIs (APIs start with `/api/experience/verification`) is a set 
 
   Request body:
 
-  | Field      | Type   | Description                                   | Required |
-  | ---------- | ------ | --------------------------------------------- | -------- |
-  | backupCode | string | the backup code to verify the Backup Code MFA | Yes      |
+  | Field      | Type   | Description           | Required |
+  | ---------- | ------ | --------------------- | -------- |
+  | backupCode | string | The backup code value | Yes      |
 
-### 4. Profile fulfillment API
+### 2. Identification API
 
-The profile fulfillment API is used to provide additional profile data and MFA settings during the sign-in experience. Upon the sign-in experience settings, the user must provide the necessary profile data and MFA settings to complete the interaction.
+`POST /api/experience/identification`
+
+The identification API is the core interaction API to specify the interaction event and identify the user during the sign-in experience.
+
+Request body:
+
+| Field            | Type             | Description                                                       | Required |
+| ---------------- | ---------------- | ----------------------------------------------------------------- | -------- |
+| interactionEvent | InteractionEvent | The interaction event for the current interaction.                | Yes      |
+| verificationId   | string           | The verification record id that can be used to identify the user. | Yes      |
+
+#### Sign in
+
+- The `interactionEvent` must be specified as `SignIn` to initiate a sign-in interaction.
+- The `verificationId` is required to identify the user with the given identifier.
+- The `userId` will be set in the interaction if the user is successfully identified.
+- Once the user is identified, the interaction status will be changed to `Identified`.
+
+#### Register
+
+- The `interactionEvent` must be specified as `Register` to initiate a register interaction.
+- The `verificationId` is required to provide the necessary identifier that can be used to identify the user.
+- The user will be created in the user database once a verified identifier is provided.
+- The `userId` will be set in the interaction if the user is successfully created.
+- Once the user is identified, the interaction status will be changed to `Identified`.
+
+#### Forgot password
+
+- The `interactionEvent` must be specified as `ForgotPassword` to initiate a forgot password interaction.
+- The `verificationId` is required to identify the user with the given identifier. Only the `verificationCode` verification record is allowed for the forgot password interaction.
+- The `userId` will be set in the interaction if the user is successfully identified.
+- Once the user is identified, the interaction status will be changed to `Identified`.
+
+### 3. Profile fulfillment API
+
+The profile fulfillment API is used to provide additional profile data and MFA settings during the sign-in experience. Based the sign-in experience settings, the user must provide the necessary profile data and MFA settings to complete the interaction.
 
 - Profile fulfillment API can be used only if the current interaction is `Identified` and `Verified`.
 - Password can be set using the profile fulfillment API during the `forgot-password` interaction event if the current interaction is `Identified`.
@@ -625,42 +532,390 @@ The profile fulfillment API is used to provide additional profile data and MFA s
 
   The profile API is used to update the user's profile information in Logto.
 
-  - A verification record is required to verify the given identifier if the `email`, or `phone` is provided in the profile data.
+  - A verification record is required to verify the given identifier if the `email`l or `phone` is provided in the profile data.
 
   Request body:
 
-  | Field    | Type                         | Description                                              | Required                     |
-  | -------- | ---------------------------- | -------------------------------------------------------- | ---------------------------- |
-  | email    | IdentifierWithVerificationId | The user's email address with a verified verification Id | No                           |
-  | phone    | IdentifierWithVerificationId | The user's phone number with a verified verification Id  | No                           |
-  | username | string                       | The user's username.                                     | No                           |
-  | password | string                       | The user's password.                                     | No (Yes for password update) |
+  | Field    | Type   | Description          | Required                     |
+  | -------- | ------ | -------------------- | ---------------------------- |
+  | username | string | The user's username. | No                           |
+  | password | string | The user's password. | No (Yes for password update) |
 
   Additional profile data can be added based on the sign-in experience settings.
 
-- `POST /api/experience/profile/mfa-skipped`
-
-  The `mfa-skipped` API is used to skip the MFA setup process for the user.
+- `PATCH /api/experience/profile/mfa`
 
   - The user can skip the MFA setup process if the MFA settings are optional in the sign-in experience settings.
-  - The MFA settings check will be skipped during the profile fulfillment status validation of the interaction.
+  - If a verified MFA verification record is provided, the MFA settings will be updated in the user's profile.
 
-### 5. Interaction status API
+  Request body:
+
+  | Field          | Type    | Description                            | Required |
+  | -------------- | ------- | -------------------------------------- | -------- |
+  | skipMFA        | boolean | Skip the MFA setup process             | No       |
+  | verificationId | string  | The verification record id for the MFA | Yes      |
+
+- `POST /api/experience/profile/mfa/backup-code`
+
+  - Generate a set of backup codes for the user to use as an alternative MFA verification method.
+
+- `POST /api/experience/profile/verified-email`
+
+  A verification record is required to verify the given email if `email` is provided in the profile data
+
+  Request body:
+
+  | Field          | Type   | Description                | Required |
+  | -------------- | ------ | -------------------------- | -------- |
+  | email          | string | The user's email.          | Yes      |
+  | verificationId | string | The verification record id | Yes      |
+
+- `POST /api/experience/profile/verified-phone`
+
+  A verification record is required to verify the given phone number if `phone` is provided in the profile data.
+
+  Request body:
+
+  | Field          | Type   | Description                | Required |
+  | -------------- | ------ | -------------------------- | -------- |
+  | phone          | string | The user's phone.          | Yes      |
+  | verificationId | string | The verification record id | Yes      |
+
+### 4. Interaction status API
 
 - `POST /api/experience/submit`
 
   The `submit` API is used to submit the user's interaction to the Logto.
 
-  - All the precondition checks will be performed before submitting the interaction. The interaction will be rejected if any of the checks fail.
+  - All precondition checks will be performed before submitting the interaction. The interaction will be rejected if any of the checks fail.
   - The interaction must be `Identified`, `Verified`, and `Profile fulfilled` to be submitted successfully.
   - Once the interaction is submitted, the new user profile and MFA settings will be updated in the user database.
 
 - `GET /api/experience/interaction-status`
 
-  The `interaction-status` API is used to get the current status of the user's interaction. The user can use this API to check the progress and missing requirements of the interaction.
+  The `interaction-status` API is used to retrieve the current status of the user's interaction. The user can use this API to check the progress and missing requirements of the interaction.
 
   - `interactionEvent`: The interaction event for the current interaction.
   - `userId`: The userId of the user for the current interaction. Only available once the user is identified by at least one verified identifier.
-  - **verificationRecordStatus**: The verification record list created during the current interaction. Only verification type, status, and verificationId are returned.
-  - **profileKeys**: The user provided profile keys in the current interaction that will be updated in the user database.
-  - **status**: The current status of the interaction.
+  - `verificationRecordStatus`: The verification record list created during the current interaction. Only verification type, status, and verificationId are returned.
+  - `profileKeys`: The user provided profile keys in the current interaction that will be updated in the user database.
+  - `status`: The current status of the interaction.
+
+## Appendix B. Example
+
+### 1. Sign-in with username and password
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 2. Sign-in with username and password and fulfill email
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/profile/verified-email
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 3. Sign-in with username and password with MFA (TOTP)
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/totp/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 4. Sign-in with verification code
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+     C->>L: POST /api/experience/submit
+```
+
+### 5. Sign-in with verification code and fulfill password
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/new-password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/profile/password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 6. Sign-in with verification code and fulfill MFA (TOTP and Backup code)
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/totp/secret
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/totp/verify
+    L-->>C: 200 OK
+    C->>L: PATCH /api/experience/profile/mfa
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/profile/mfa/backup-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 7. Sign-in with verification code and skip MFA
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: PATCH /api/experience/profile/mfa
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 8. Sign-in with verification code and identity not found, register directly
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 404 Not Found
+    C->>L: POST /api/experience/identification
+    L-->>C: 201 Created
+    C->>L: POST /api/experience/submit
+```
+
+### 9. Sign-in with social identity
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+    participant S as Social Identity Provider
+
+    C->>L: POST /api/experience/verification/social/:connectorId/authorization-url
+    L-->>C: 200 OK
+    C->>S: GET /authorize?redirectUrl=...
+    S-->>C: 302 Redirect
+    C->>L: POST /api/experience/verification/social/:connectorId/authenticate
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 10. Sign-in with social identity and identity not found, register directly
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+    participant S as Social Identity Provider
+
+    C->>L: POST /api/experience/verification/social/:connectorId/authorization-url
+    L-->>C: 200 OK
+    C->>S: GET /authorize?redirectUrl=...
+    S-->>C: 302 Redirect
+    C->>L: POST /api/experience/verification/social/:connectorId/authenticate
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 404 Not Found
+    C->>L: POST /api/experience/identification
+    L-->>C: 201 Created
+    C->>L: POST /api/experience/submit
+```
+
+### 11. Sign-in with social identity and identity not found, link to existing account with same verified email
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+    participant S as Social Identity Provider
+
+    C->>L: POST /api/experience/verification/social/:connectorId/authorization-url
+    L-->>C: 200 OK
+    C->>S: GET /authorize?redirectUrl=...
+    S-->>C: 302 Redirect
+    C->>L: POST /api/experience/verification/social/:connectorId/authenticate
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 404 Not Found
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 12. Register with username and password
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/new-password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 201 Created
+    C->>L: POST /api/experience/submit
+```
+
+### 13. Register with email and password
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 201 Created
+    C->>L: POST /api/experience/verification/new-password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/profile/password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+or
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/new-password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 201 Created
+    C->>L: POST /api/experience/submit
+```
+
+### 14. Register with username and password with MFA setup (WebAuthn)
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/new-password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/web-authn/registration
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/web-authn/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/profile/mfa
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 15. Register with email and identity exists with the same email, sign-in directly
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 422 Account Already Exists
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
+
+### 16. Forgot password with email
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant L as Logto
+
+    C->>L: POST /api/experience/verification/verification-code
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/verification-code/verify
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/identification
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/new-password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/profile/password
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/submit
+```
