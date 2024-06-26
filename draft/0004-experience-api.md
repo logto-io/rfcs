@@ -506,6 +506,7 @@ Request body:
 - The `verificationId` is required to identify the user with the given identifier.
 - The `userId` will be set in the interaction if the user is successfully identified.
 - Once the user is identified, the interaction status will be changed to `Identified`.
+- A social identity with a verified email can be linked to an existing user account with the same email by setting the `linkSocialIdentity` flag to `true`.
 
 #### Register
 
