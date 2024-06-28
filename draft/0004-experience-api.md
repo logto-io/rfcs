@@ -136,10 +136,10 @@ Logto uses interactions to track the user's progress and status during the sign-
 
 ### 5.1 Interaction data
 
-- `userId` (`string`): The unique ID of the user for the current interaction. Only available once the user is identified by at least one verified identifier.
-- `interactionEvent` (`enum`): The [interaction event](#41-interaction-event) for the current interaction.
-- `verificationRecords` (`array`): The [verification record](#43-verification-record) list created during the current interaction.
-- `profile` (`object`): The user provided [profile data](#44-user-profile) in the current interaction that needs to be updated.
+- `userId` (string): The unique ID of the user for the current interaction. Only available once the user is identified by at least one verified identifier.
+- `interactionEvent` (enum): The [interaction event](#41-interaction-event) for the current interaction.
+- `verificationRecords` (array): The [verification record](#43-verification-record) list created during the current interaction.
+- `profile` (object): The user provided [profile data](#44-user-profile) in the current interaction that needs to be updated.
 
 ### 5.2 Interaction status
 
@@ -165,7 +165,7 @@ The sign-in interaction may vary based on the sign-in experience settings. Here'
 
 2. Identified: The user is identified by at least one verified identifier.
 
-   - `userId`: REQUIRED. The userId of the user for the current interaction.
+   - `userId`: REQUIRED. The user ID of the user for the current interaction.
    - `interactionEvent`: REQUIRED. `SignIn` interaction event has been specified.
    - `verificationRecords`: REQUIRED.
      - The identifier verification records are created and verified.
