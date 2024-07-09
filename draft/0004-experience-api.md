@@ -327,7 +327,7 @@ All experience API can be called from the experience app to interact with Logto 
 
 The experience interaction API is the core API used to initiate and manage the user's interaction with Logto during the sign-in experience.
 
-- `POST /api/experience`
+- `PUT /api/experience`
 
   Initiate a new interaction for the user to start the sign-in experience.
 
@@ -652,7 +652,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/password
     L-->>C: 200 OK
@@ -668,7 +668,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/password
     L-->>C: 200 OK
@@ -690,7 +690,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/password
     L-->>C: 200 OK
@@ -708,7 +708,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
@@ -726,7 +726,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
@@ -748,7 +748,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
@@ -774,7 +774,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
@@ -794,7 +794,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
@@ -817,7 +817,7 @@ sequenceDiagram
     participant L as Logto
     participant S as Social Identity Provider
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/social/:connectorId/authorization-uri
     L-->>C: 200 OK
@@ -838,7 +838,7 @@ sequenceDiagram
     participant L as Logto
     participant S as Social Identity Provider
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/social/:connectorId/authorization-uri
     L-->>C: 200 OK
@@ -863,7 +863,7 @@ sequenceDiagram
     participant L as Logto
     participant S as Social Identity Provider
 
-    C->>L: POST /api/experience (sign-in)
+    C->>L: PUT /api/experience (sign-in)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/social/:connectorId/authorization-url
     L-->>C: 200 OK
@@ -885,7 +885,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (register)
+    C->>L: PUT /api/experience (register)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/new-password
     L-->>C: 200 OK
@@ -901,7 +901,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (register)
+    C->>L: PUT /api/experience (register)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
@@ -923,7 +923,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (register)
+    C->>L: PUT /api/experience (register)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
@@ -943,7 +943,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (register)
+    C->>L: PUT /api/experience (register)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/new-password
     L-->>C: 200 OK
@@ -965,7 +965,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (register)
+    C->>L: PUT /api/experience (register)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
@@ -987,7 +987,7 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
-    C->>L: POST /api/experience (forgot-password)
+    C->>L: PUT /api/experience (forgot-password)
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
