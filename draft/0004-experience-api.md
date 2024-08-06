@@ -147,7 +147,7 @@ In a sign-in experience, the user's interaction progress will be tracked based o
 
 Here are the interaction statuses defined in Logto:
 
-- **Initiated**: The interaction is initiated by the user.
+- **Initiated**: The interaction is initiated by the user and the [interaction event](#41-interaction-event) is specified for the current interaction.
 - **Identified**: The user is identified by a verified identifier. Once the user is identified, a unique `userId` will be set in the interaction. The identified status cannot be unset once the user is successfully identified in the interaction.
 - **Verified**: The user is verified by all the necessary verification records, including the MFA. It is computed based on the verified `verificationRecords` in the interaction and the sign-in experience settings. The interaction will be considered as `Verified` only if the user is identified and all the necessary verification records are verified. Any newly added verification requirements in the sign-in experience settings will revert the status back to `Identified` until the new requirements are met.
 - **Profile fulfilled**: The user has provided all the necessary profile data and MFA settings. It is computed based on the `profile` in the interaction and the sign-in experience settings. The interaction is considered as `Profile fulfilled` only if the user is verified and all the necessary profile data and MFA settings are provided. Any newly added profile requirements in the sign-in experience settings will revert the status back to `Verified` until the new requirements are met.
@@ -159,7 +159,7 @@ The sign-in interaction may vary based on the sign-in experience settings. Here'
 1. Initiated: The interaction is initiated by the user.
 
    - `userId`: NULL. The user has not been identified yet.
-   - `interactionEvent`: OPTIONAL. The interaction event may or may not be specified.
+   - `interactionEvent`: REQUIRED. `SignIn` interaction event has been specified.
    - `verificationRecords`: OPTIONAL. Verification records may be created but not verified yet.
    - `profile`: NULL. The user cannot provide profile data until they are identified and verified.
 
@@ -200,7 +200,7 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
 1. Initiated: The interaction is initiated by the user.
 
    - `userId`: NULL. No user account is created yet.
-   - `interactionEvent`: OPTIONAL. The interaction event may or may not be specified.
+   - `interactionEvent`: REQUIRED. The `Register` interaction event has been specified.
    - `verificationRecords`: OPTIONAL. Verification records may be created but not verified yet.
    - `profile`: NULL. The user cannot provide profile data until they are identified and verified.
 
@@ -239,7 +239,7 @@ Based on the user's sign-in experience progress and user provided data, Logto wi
 1. Initiated: The interaction is initiated by the user.
 
    - `userId`: NULL. Not available for the forgot password interaction.
-   - `interactionEvent`: OPTIONAL. The interaction event may or may not be specified.
+   - `interactionEvent`: REQUIRED. The `ForgotPassword` interaction event has been specified.
    - `verificationRecords`: OPTIONAL. Verification records may be created before the user is identified.
    - `profile`: NULL. The user cannot provide profile data until they are identified.
 
@@ -321,9 +321,51 @@ Currently, a verification record is created directly via the Experience API. We 
 
 ## Appendix A. Experience API
 
-All experience API  can be called from the experience app to interact with Logto for user identity verification and profile fulfillment. The APIs are designed to be stateful and require an interaction context to track the user's progress and status during the sign-in experience. All the APIs are using the `POST` method with action-based endpoints to represent the user's interaction purpose with Logto.
+All experience API can be called from the experience app to interact with Logto for user identity verification and profile fulfillment. The APIs are designed to be stateful and require an interaction context to track the user's progress and status during the sign-in experience. All the APIs are using the `POST` method with action-based endpoints to represent the user's interaction purpose with Logto.
 
-### 1. Verification APIs
+### 1. Experience interaction API
+
+The experience interaction API is the core API used to initiate and manage the user's interaction with Logto during the sign-in experience.
+
+- `PUT /api/experience`
+
+  Initiate a new interaction for the user to start the sign-in experience.
+
+  - A [interaction event](#41-interaction-event) must be specified to define the user's interaction purpose with Logto.
+  - Any existing interaction data will be cleared once a new interaction is initiated.
+
+  Request body:
+
+  | Field            | Type             | Description                                        | Required |
+  | ---------------- | ---------------- | -------------------------------------------------- | -------- |
+  | interactionEvent | InteractionEvent | The interaction event for the current interaction. | Yes      |
+
+- `POST /api/experience/submit`
+
+  The `submit` API is used to submit the user's interaction to the Logto.
+
+  - All precondition checks will be performed before submitting the interaction. The interaction will be rejected if any of the checks fail.
+  - The interaction must be `Identified`, `Verified`, and `Profile fulfilled` to be submitted successfully.
+  - Once the interaction is submitted, the new user profile and MFA settings will be updated in the user database.
+
+- `PUT /api/experience/interaction-event`
+
+  Update the interaction event for the current interaction.
+
+  - The interaction event can be updated during the interaction to change the user's interaction purpose with Logto.
+  - Only `SignIn` and `Register` interaction events are allowed to be interchanged during the interaction.
+  - The interaction status will be recalculated based on the updated interaction event.
+  - A non-existing verified email/phone verification record can be used to directly create a new user account by changing the interaction event from `SignIn` to `Register`.
+  - A existing verified email/phone verification record can be used to directly sign-in to the user account by changing the interaction event from `Register` to `SignIn`.
+  - A social/enterprise SSO identity verification record can be used to directly create a new user account by changing the interaction event from `SignIn` to `Register`.
+
+  Request body:
+
+  | Field            | Type             | Description                                        | Required |
+  | ---------------- | ---------------- | -------------------------------------------------- | -------- |
+  | interactionEvent | InteractionEvent | The interaction event for the current interaction. | Yes      |
+
+### 2. Verification APIs
 
 The verification APIs (APIs start with `/api/experience/verification`) are a set of APIs used to create and verify a verification record for the user during the sign-in experience.
 
@@ -345,15 +387,15 @@ The verification APIs (APIs start with `/api/experience/verification`) are a set
 
 #### Social/SSO
 
-- `POST /api/experience/verification/{social|sso}/:connectorId/authorization-url`
+- `POST /api/experience/verification/{social|sso}/:connectorId/authorization-uri`
 
-  Generate an authorization URL for the user to authenticate with a third-party social or enterprise identity provider.
+  Generate an authorization URI for the user to authenticate with a third-party social or enterprise identity provider.
 
   - A social/SSO verification record will be created in the interaction.
   - The unique `verificationId` will be generated for the verification record.
   - A `redirectUrl` will be generated for the user to authenticate with the social/SSO provider.
 
-- `POST /api/experience/verification/{social|sso}/:connectorId/authenticate`
+- `POST /api/experience/verification/{social|sso}/:connectorId/verify`
 
   Authenticate the user with the social/SSO provider and identify the user with the authenticated social/SSO identity.
 
@@ -419,7 +461,7 @@ The verification APIs (APIs start with `/api/experience/verification`) are a set
 
   | Field           | Type   | Description                                      | Required |
   | --------------- | ------ | ------------------------------------------------ | -------- |
-  | code            | string | The TOTP to verify the TOTP MFA method      | Yes      |
+  | code            | string | The TOTP to verify the TOTP MFA method           | Yes      |
   | verificationId? | string | The verification id for the new generated secret | No       |
 
 #### WebAuthn
@@ -486,44 +528,43 @@ The verification APIs (APIs start with `/api/experience/verification`) are a set
   | password   | string     | The user's password.   | Yes      |
   | identifier | Identifier | The user's identifier. | No       |
 
-### 2. Identification API
+### 3. Identification API
 
 `POST /api/experience/identification`
 
-The identification API is the core interaction API to specify the interaction event and identify the user during the sign-in experience.
+The identification API is used to identify the user with the given identifier during the sign-in experience. For the register interaction, the user will be created in the user database once a verified identifier is provided.
 
 Request body:
 
-| Field              | Type             | Description                                                                                                    | Required |
-| ------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------- | -------- |
-| interactionEvent   | InteractionEvent | The interaction event for the current interaction.                                                             | Yes      |
-| verificationId     | string           | The verification record id that can be used to identify the user.                                              | Yes      |
-| linkSocialIdentity | boolean          | Link the new social identity to a existing user account with same email. Only used in the social sign-in flow. | No       |
+| Field              | Type    | Description                                                                                                    | Required |
+| ------------------ | ------- | -------------------------------------------------------------------------------------------------------------- | -------- |
+| verificationId     | string  | The verification record id that can be used to identify the user.                                              | Yes      |
+| linkSocialIdentity | boolean | Link the new social identity to a existing user account with same email. Only used in the social sign-in flow. | No       |
 
-#### Sign in
+#### Sign-in interaction
 
-- The `interactionEvent` must be specified as `SignIn` to initiate a sign-in interaction.
+- The current `interactionEvent` is specified as `SignIn`.
 - The `verificationId` is required to identify the user with the given identifier.
 - The `userId` will be set in the interaction if the user is successfully identified.
 - Once the user is identified, the interaction status will be changed to `Identified`.
 - A social identity with a verified email can be linked to an existing user account with the same email by setting the `linkSocialIdentity` flag to `true`.
 
-#### Register
+#### Register interaction
 
-- The `interactionEvent` must be specified as `Register` to initiate a register interaction.
+- The current `interactionEvent` is specified as `Register`.
 - The `verificationId` is required to provide the necessary identifier that can be used to identify the user.
 - The user will be created in the user database once a verified identifier is provided.
 - The `userId` will be set in the interaction if the user is successfully created.
 - Once the user is identified, the interaction status will be changed to `Identified`.
 
-#### Forgot password
+#### Forgot password interaction
 
-- The `interactionEvent` must be specified as `ForgotPassword` to initiate a forgot password interaction.
+- The current `interactionEvent` is specified as `ForgotPassword` .
 - The `verificationId` is required to identify the user with the given identifier. Only the `verificationCode` verification record is allowed for the forgot password interaction.
 - The `userId` will be set in the interaction if the user is successfully identified.
 - Once the user is identified, the interaction status will be changed to `Identified`.
 
-### 3. Profile fulfillment API
+### 4. Profile fulfillment API
 
 The profile fulfillment API is used to provide additional profile data and MFA settings during the sign-in experience. Based the sign-in experience settings, the user must provide the necessary profile data and MFA settings to complete the interaction.
 
@@ -534,16 +575,23 @@ The profile fulfillment API is used to provide additional profile data and MFA s
 
   The profile API is used to update the user's profile information in Logto.
 
-  - A verification record is required to verify the given identifier if the `email`l or `phone` is provided in the profile data.
+  Request body:
+
+  | Field    | Type   | Description          | Required |
+  | -------- | ------ | -------------------- | -------- |
+  | username | string | The user's username. | No       |
+
+  (Additional profile data can be added based on the sign-in experience settings)
+
+- `POST /api/experience/profile/password`
+
+  - A new password verification record is required to set up a new password for the user.
 
   Request body:
 
-  | Field    | Type   | Description          | Required                     |
-  | -------- | ------ | -------------------- | ---------------------------- |
-  | username | string | The user's username. | No                           |
-  | password | string | The user's password. | No (Yes for password update) |
-
-  Additional profile data can be added based on the sign-in experience settings.
+  | Field          | Type   | Description                                                  | Required |
+  | -------------- | ------ | ------------------------------------------------------------ | -------- |
+  | verificationId | string | The verification record id for the new password verification | Yes      |
 
 - `PATCH /api/experience/profile/mfa`
 
@@ -555,6 +603,7 @@ The profile fulfillment API is used to provide additional profile data and MFA s
   | Field          | Type    | Description                            | Required |
   | -------------- | ------- | -------------------------------------- | -------- |
   | skipMFA        | boolean | Skip the MFA setup process             | No       |
+  | type           | MFAType | The MFA type to update in the profile. | No       |
   | verificationId | string  | The verification record id for the MFA | Yes      |
 
 - `POST /api/experience/profile/mfa/backup-code`
@@ -583,15 +632,7 @@ The profile fulfillment API is used to provide additional profile data and MFA s
   | phone          | string | The user's phone.          | Yes      |
   | verificationId | string | The verification record id | Yes      |
 
-### 4. Interaction status API
-
-- `POST /api/experience/submit`
-
-  The `submit` API is used to submit the user's interaction to the Logto.
-
-  - All precondition checks will be performed before submitting the interaction. The interaction will be rejected if any of the checks fail.
-  - The interaction must be `Identified`, `Verified`, and `Profile fulfilled` to be submitted successfully.
-  - Once the interaction is submitted, the new user profile and MFA settings will be updated in the user database.
+### 5. Interaction status API
 
 - `GET /api/experience/interaction-status`
 
@@ -599,9 +640,8 @@ The profile fulfillment API is used to provide additional profile data and MFA s
 
   - `interactionEvent`: The interaction event for the current interaction.
   - `userId`: The userId of the user for the current interaction. Only available once the user is identified by at least one verified identifier.
-  - `verificationRecordStatus`: The verification record list created during the current interaction. Only verification type, status, and verificationId are returned.
+  - `verificationRecords`: The verification record list created during the current interaction. Only verification type, status, and verificationId are returned.
   - `profileKeys`: The user provided profile keys in the current interaction that will be updated in the user database.
-  - `status`: The current status of the interaction.
 
 ## Appendix B. Examples
 
@@ -612,6 +652,8 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/password
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
@@ -626,6 +668,8 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/password
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
@@ -639,13 +683,15 @@ sequenceDiagram
     C->>L: POST /api/experience/submit
 ```
 
-### 3. Sign-in with username / password with MFA (TOTP)
+### 3. Sign-in with username / password with MFA (TOTP) verification
 
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/password
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
@@ -662,6 +708,8 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code/verify
@@ -678,6 +726,8 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code/verify
@@ -698,6 +748,8 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code/verify
@@ -708,7 +760,7 @@ sequenceDiagram
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/totp/verify
     L-->>C: 200 OK
-    C->>L: PATCH /api/experience/profile/mfa
+    C->>L: PATCH /api/experience/profile/mfa (type: TOTP)
     L-->>C: 200 OK
     C->>L: POST /api/experience/profile/mfa/backup-code
     L-->>C: 200 OK
@@ -722,13 +774,15 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code/verify
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 200 OK
-    C->>L: PATCH /api/experience/profile/mfa
+    C->>L: PATCH /api/experience/profile/mfa (skipMFA: true)
     L-->>C: 200 OK
     C->>L: POST /api/experience/submit
 ```
@@ -740,12 +794,16 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code/verify
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 404 Not Found
+    C->>L: PUT /api/experience/interaction-event (register)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 201 Created
     C->>L: POST /api/experience/submit
@@ -759,11 +817,13 @@ sequenceDiagram
     participant L as Logto
     participant S as Social Identity Provider
 
-    C->>L: POST /api/experience/verification/social/:connectorId/authorization-url
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/social/:connectorId/authorization-uri
     L-->>C: 200 OK
     C->>S: GET /authorize?redirectUrl=...
     S-->>C: 302 Redirect
-    C->>L: POST /api/experience/verification/social/:connectorId/authenticate
+    C->>L: POST /api/experience/verification/social/:connectorId/verify
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 200 OK
@@ -778,14 +838,18 @@ sequenceDiagram
     participant L as Logto
     participant S as Social Identity Provider
 
-    C->>L: POST /api/experience/verification/social/:connectorId/authorization-url
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
+    C->>L: POST /api/experience/verification/social/:connectorId/authorization-uri
     L-->>C: 200 OK
     C->>S: GET /authorize?redirectUrl=...
     S-->>C: 302 Redirect
-    C->>L: POST /api/experience/verification/social/:connectorId/authenticate
+    C->>L: POST /api/experience/verification/social/:connectorId/verify
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 404 Not Found
+    C->>L: PUT /api/experience/interaction-event (register)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 201 Created
     C->>L: POST /api/experience/submit
@@ -799,6 +863,8 @@ sequenceDiagram
     participant L as Logto
     participant S as Social Identity Provider
 
+    C->>L: PUT /api/experience (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/social/:connectorId/authorization-url
     L-->>C: 200 OK
     C->>S: GET /authorize?redirectUrl=...
@@ -807,7 +873,7 @@ sequenceDiagram
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 404 Not Found
-    C->>L: POST /api/experience/identification
+    C->>L: POST /api/experience/identification (linkSocialIdentity: true)
     L-->>C: 200 OK
     C->>L: POST /api/experience/submit
 ```
@@ -819,6 +885,8 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (register)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/new-password
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
@@ -833,11 +901,13 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (register)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code/verify
     L-->>C: 200 OK
-    C->>L: POST /api/experience/identification
+    C->>L: POST /api/experience/identification (email identifier)
     L-->>C: 201 Created
     C->>L: POST /api/experience/verification/new-password
     L-->>C: 200 OK
@@ -853,11 +923,13 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (register)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code/verify
     L-->>C: 200 OK
-    C->>L: POST /api/experience/verification/new-password
+    C->>L: POST /api/experience/verification/new-password (new password with email identifier)
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 201 Created
@@ -871,6 +943,8 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (register)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/new-password
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
@@ -879,7 +953,7 @@ sequenceDiagram
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/web-authn/verify
     L-->>C: 200 OK
-    C->>L: POST /api/experience/profile/mfa
+    C->>L: POST /api/experience/profile/mfa (type: WebAuthn)
     L-->>C: 200 OK
     C->>L: POST /api/experience/submit
 ```
@@ -891,12 +965,16 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (register)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code/verify
     L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 422 Account Already Exists
+    C->>L: PUT /api/experience/interaction-event (sign-in)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/identification
     L-->>C: 200 OK
     C->>L: POST /api/experience/submit
@@ -909,6 +987,8 @@ sequenceDiagram
     participant C as Client
     participant L as Logto
 
+    C->>L: PUT /api/experience (forgot-password)
+    L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code
     L-->>C: 200 OK
     C->>L: POST /api/experience/verification/verification-code/verify
