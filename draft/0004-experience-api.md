@@ -345,7 +345,7 @@ The experience interaction API is the core API used to initiate and manage the u
   - The interaction status will be recalculated based on the updated interaction event.
   - The `profile` will be cleared once the interaction event is updated. This is to prevent anonymous user profile data (from register event) from being used in the sign-in flow.
   - A non-existing verified email/phone verification record can be used to directly create a new user account by changing the interaction event from `SignIn` to `Register`.
-  - A existing verified email/phone verification record can be used to directly sign-in to the user account by changing the interaction event from `Register` to `SignIn`.
+  - An existing verified email/phone verification record can be used to directly sign-in to the user account by changing the interaction event from `Register` to `SignIn`.
   - A social/enterprise SSO identity verification record can be used to directly create a new user account by changing the interaction event from `SignIn` to `Register`.
 
   Request body:
