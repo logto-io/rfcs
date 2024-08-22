@@ -270,7 +270,7 @@ To maintain interaction status and decouple API logic, multiple API requests are
 
 Logto provides a variety of authentication and verification methods to meet the diverse needs of developers and end-users. We have been constantly improving the sign-in experience configurations and providing extra customization options for the developers to build a flexible and secure sign-in experience.
 
-As the sign-in experience is a critical part of the user authentication process, and it is hard to enumerate all the possible uses cases, we believe that opening up the experience APIs to the developers with a customizable front-end user interface will provide more flexibility and control over the sign-in experience.
+As the sign-in experience is a critical part of the user authentication process, and it is hard to enumerate all the possible use cases, we believe that opening up the experience APIs to the developers with a customizable front-end user interface will provide more flexibility and control over the sign-in experience.
 
 ### 7.1 Considerations
 
@@ -284,7 +284,7 @@ Considering no extra new features or customization options are added, instead of
 
 Moreover, continuing to use our existing APIs and interaction design will likely lead to a rapidly increasing maintenance effort as we keep introducing new features and flows to our system. Eventually, we will reach a point where refactoring and migrating our existing sign-in experience logic will be unavoidable. Therefore, the best time to implement these changes is now.
 
-## 8.Future possibilities
+## 8. Future possibilities
 
 ### 8.1 User profile management
 
