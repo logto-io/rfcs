@@ -396,7 +396,7 @@ The verification APIs (APIs start with `/api/experience/verification`) are a set
 
   | Field          | Type                   | Description                                | Required |
   | -------------- | ---------------------- | ------------------------------------------ | -------- |
-  | data           | Record<string, string> | Callback data from the social/SSO provider | true     |
+  | data           | Record<string, string> | Callback data from the social/SSO provider | YES      |
   | verificationId | string                 | The verification record id                 | NO       |
 
 #### Verification code
@@ -454,7 +454,7 @@ The verification APIs (APIs start with `/api/experience/verification`) are a set
   | Field          | Type   | Description                                      | Required |
   | -------------- | ------ | ------------------------------------------------ | -------- |
   | code           | string | The TOTP to verify the TOTP MFA method           | Yes      |
-  | verificationId | string | The verification id for the new generated secret | No       |
+  | verificationId | string | The verification id for the new generated secret | NO       |
 
 #### WebAuthn
 
@@ -542,7 +542,7 @@ Request body:
 | Field              | Type    | Description                                                                                                                                         | Required |
 | ------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | verificationId     | string  | The verification record id that can be used to identify the user.                                                                                   | NO       |
-| linkSocialIdentity | boolean | Link the new social identity to a existing user account with same email. Use this flag to link the new social identity to an existing user account. | No       |
+| linkSocialIdentity | boolean | Link the new social identity to a existing user account with same email. Use this flag to link the new social identity to an existing user account. | NO       |
 
 #### Sign-in interaction
 
@@ -585,19 +585,19 @@ The profile API is used to provide additional profile data and MFA settings duri
 
   | Field          | Type   | Description                                      | Required |
   | -------------- | ------ | ------------------------------------------------ | -------- |
-  | type           | union  | The profile data type to update.                 | true     |
-  | value          | string | The profile data value to update.                | false    |
-  | verificationId | string | The verification record id for the profile data. | false    |
+  | type           | union  | The profile data type to update.                 | YES      |
+  | value          | string | The profile data value to update.                | NO       |
+  | verificationId | string | The verification record id for the profile data. | NO       |
 
   Supported request body collections:
 
   | Type     | verificationId | value |
   | -------- | -------------- | ----- |
-  | email    | true           | false |
-  | phone    | true           | false |
-  | password | false          | true  |
-  | username | false          | true  |
-  | social   | true           | false |
+  | email    | YES            | NO    |
+  | phone    | YES            | NO    |
+  | password | NO             | YES   |
+  | username | NO             | YES   |
+  | social   | YES            | NO    |
 
 - `PUT /api/experience/profile/password`
 
@@ -616,10 +616,10 @@ The profile API is used to provide additional profile data and MFA settings duri
 
   Request body:
 
-  | Field          | Type    | Description                            | Required |
-  | -------------- | ------- | -------------------------------------- | -------- |
-  | type           | MFAType | The MFA type to update in the profile. | No       |
-  | verificationId | string  | The verification record id for the MFA | Yes      |
+  | Field          | Type      | Description                             | Required |
+  | -------------- | --------- | --------------------------------------- | -------- |
+  | type           | MfaFactor | The MFA type to update in the profile.  | NO       |
+  | verificationId | string    | The verification record id for the MFA. | Yes      |
 
 - `POST /api/experience/profile/mfa-skipped`
 
@@ -1026,7 +1026,7 @@ sequenceDiagram
     C->>L: POST /api/experience/submit
 ```
 
-### 19. Forgot password with email
+### 18. Forgot password with email
 
 ```mermaid
 sequenceDiagram
